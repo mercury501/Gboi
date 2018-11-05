@@ -1,8 +1,22 @@
+#include "include/SDL.h"
+
 using namespace std;
+
+const int SCREEN_WIDTH = 256;
+const int SCREEN_HEIGHT = 224;
+
 
 
 class gbcpu {
 private:
+
+
+	uint16_t gfx[SCREEN_WIDTH][SCREEN_HEIGHT][3];
+
+	SDL_Window* window = NULL;
+	SDL_Texture* texture = NULL;
+	SDL_Renderer* renderer = NULL;
+
 	uint8_t memory[0xffff];
 
 	/*Flag register (F)bits:
@@ -19,10 +33,12 @@ private:
 
 	uint16_t pc;
 	uint16_t sp;
+	uint32_t rhl;
 
-	uint16_t af; //accumulator
-	  //status register	
-	uint16_t bc, de, hl; //general purpose
+
+
+	uint16_t ra, rb, rc, rd, re; //registers
+	uint16_t sr;
 
 	/*  Interrupt Enable Register
 		-------------------------- - FFFF
@@ -58,14 +74,197 @@ private:
 	uint8_t opcode;
 	uint16_t operand[2];
 
-	char w = 'w';    //for ease of use of flags function
-	char r = 'r';
-	char n = 'n';
-	char z = 'z';
-	char h = 'h';
-	char c = 'c';
+	uint16_t bbaa() {
+
+		return (operand[1] << 8) + operand[0];
+
+	}
+
+	/*uint16_t aabb()  {    
+
+		return (operand[1] << 8) + operand[0];
+
+	}*/  
+
+	bool r_sr(char flg) {  //read status register
+		switch (flg) {
+		case 'c':
+			return (sr & 0b00010000);
+
+		case 'h':
+			return (sr & 0b00100000);
+
+		case 'n':
+			return (sr & 0b01000000);
+
+		case 'z':
+			return (sr & 0b1000000);
+
+		}
+	}
+
+	void w_sr(char flg, bool value) {  //write status register
+		
+		switch (flg) {
+		case 'c':
+			if (value) {
+				sr = sr | 0b00010000;
+			}
+			else {
+				sr = sr & 0b11101111;
+			}
+			break;
+
+		case 'h':
+			if (value) {
+				sr = sr | 0b00100000;
+			}
+			else {
+				sr = sr & 0b11011111;
+			}
+			break;
+
+		case 'n':
+			if (value) {
+				sr = sr | 0b01000000;
+			}
+			else {
+				sr = sr & 0b10111111;
+			}
+			break;
+
+		case 'z':
+			if (value) {
+				sr = sr | 0b10000000;
+			}
+			else {
+				sr = sr & 0b01111111;
+			}
+			break;
+
+		}
+		return;
+	}
+
+	void check_carry(uint16_t &value) {   
+		if (value > 0xff) {
+			w_sr('c', 1);
+			value = value & 0x00ff;
+			return;
+		}
+		else
+			w_sr('c', 0);
+		return;
+	}
+
+	void check_carry32(uint32_t &value) {
+		if (value > 0xffff) {
+			w_sr('c', 1);
+			value = value & 0x00ffff;
+			return;
+		}
+		else
+			w_sr('c', 0);
+		return;
+	}
+
+	void check_hcarry(uint16_t result, uint16_t anyoperand) {
+		if ((result & 0xf) < (anyoperand & 0xf) || (result & 0xff) < (anyoperand & 0xff))
+			w_sr('h', 1);
+		else
+			w_sr('h', 0);
+		return;
+	}
+
+	void check_zero(uint16_t value) {
+		if (value == 0) {
+			w_sr('z', 1);
+			return;
+		}
+		else
+			w_sr('z', 0);
+		return;
+	}
+
+	void set_subtract(bool value) {
+		w_sr('s', value);
+		return;
+	}
+
+
+	uint16_t r_rde() {
+		uint16_t temp = 0;
+		temp += re;
+		temp += (rd << 8);   //TODO test double register action
+
+		return temp;
+	}
+
+	void w_rde(uint16_t input) {
+		re = input;
+		rd = input >> 8;
+		return;
+	}
+
+	uint16_t r_rbc() {
+		uint16_t temp = 0;
+		temp += rc;
+		temp += (rb << 8);
+
+		return temp;
+	}
+
+	void w_rbc(uint16_t input) {
+		rc = input;
+		rb = input >> 8;
+		return;
+	}
+
+	uint16_t r_raf() {
+		uint16_t temp = 0;
+		temp += sr;
+		temp += (ra << 8);
+
+		return temp;
+	}
+
+	void w_raf(uint16_t input) {
+		sr = input;
+		ra = input >> 8;
+		return;
+	}
+
+
+	void push8(uint8_t datos) { //TODO validate push pop
+		memory[sp] = datos;
+		sp--;
+		return;
+	}
+
+	uint8_t pop8() {
+		sp++;
+		return memory[sp];
+	}
+
+	void push16(uint16_t dat) {
+		push8(dat);
+		push8(dat >> 8);
+		return;
+	}
+
+	uint16_t pop16() {
+		uint16_t temp = 0;
+		temp = pop8();
+		temp = temp << 8;
+		temp += pop8();
+		return temp;
+	}
+
+
+
 
 public:
+
 
 
 	bool load_binary(string path) { //load rom starting at 0x200
@@ -115,10 +314,14 @@ public:
 	}
 
 	void soft_reset() {
-		af = 0;
-		bc = 0;
-		de = 0;
-		hl = 0;
+		ra = 0;
+		rb = 0;
+		rc = 0;
+		rd = 0;
+		re = 0;  //registers
+		rhl = 0;
+
+		sr = 0; //status register
 
 		sp = 0xdfff;
 		pc = 0x100;
@@ -127,95 +330,9 @@ public:
 
 	}
 
-	//uint8_t ram(bool mode, uint16_t address, uint8_t data) {
-	//	if (mode == 1) {  //1 = write
-	//		memory[address + 0xc000] = data;
-	//		return 0;
-	//	}
-	//	else
-
-	//		return memory[0xc000 + address];
 
 
-	//}
-	uint16_t bbaa() {
-
-		return (operand[1] << 8) + operand[0];
-
-	}
-
-	uint16_t aabb() {
-
-		return (operand[1] << 8) + operand[0];
-
-	}
-
-	bool flags(char mode, char flag, bool value) { //mode w write r read, flag Zero 7 N last math sub 6 Half carry (from lower nibble last math op) Carry set if carry or a is less than value for cp
-
-		if (mode == 'w') {
-
-			switch (flag) {
-			case 'z':
-				af | 0b0000000010000000;   //zero 7
-				break;
-
-			case 'n':
-				af | 0b0000000001000000;  //last math sub 6
-				break;
-
-			case 'h':
-				af | 0b0000000000100000;  //half carry 5
-				break;
-
-			case'c':
-				af | 0b0000000000010000;  //carry 4
-				break;
-
-			default:
-				cout << "UNKNOWN FLAG";
-				break;
-			}
-
-		}
-
-		if (mode == 'r') {
-			bool retflag;
-
-			switch (flag) {
-			case 'z':
-				retflag = ((af & 0b0000000010000000) >> 7);//zero 7
-				break;
-
-			case 'n':
-				retflag = ((af & 0b0000000001000000) >> 6);//last math sub 6
-				break;
-
-			case 'h':
-				retflag = ((af & 0b0000000000100000) >> 5); //half carry 5
-				break;
-
-			case'c':
-				retflag = ((af & 0b0000000000010000) >> 4); //carry 4
-				break;
-
-			default:
-				cout << "UNKNOWN FLAG";
-				break;
-			}
-
-			return retflag;
-
-		}
-
-		else {
-			cout << "UNKNOWN MODE STATUS REG";
-			return 0;
-		}
-
-
-	}
-
-	void cycle() {
+	void cycle() {  //fetch, execute
 		opcode = memory[pc];
 		operand[0] = memory[pc + 1];
 		operand[1] = memory[pc + 2];
@@ -226,48 +343,65 @@ public:
 			pc += 1;
 			break;
 
-		case 0xc3:   //JMP bb aa
-			pc = bbaa();
-			break;
-
-		case 0xaf:  //XOR A A
-			af & 0x00FF;
+		case 0x01:  //LD bc bbaa
+			w_rbc(bbaa());
 			pc += 1;
 			break;
-
-		case 0x21:   //21 bb aa LD HL,$aabb
-			hl = aabb();
-			pc += 3;
-			break;
-
-		case 0xff:  //FF RST $38
-			pc = 0x38;
-			break;
-
-		case 0x0e:   //0E xx LD C,$xx
-			bc = bc & 0xff00;
-			bc = bc | operand[0];
-			pc += 2;
+			
+		case 0x05: //05 DECrement B
+			rb--;
+			pc += 1;
 			break;
 
 		case 0x06: { //06 xx LD B,$xx
-			bc = bc & 0x00ff;
-			bc = bc | (operand[0] << 8);
+			rb = operand[0];
 			pc += 2;
 			break; }
 
-		case 0x32:  //32 LD (HL)-,A
-			memory[hl] = af >> 8;
-			hl--;
-			pc += 1;
+		case 0x0e:   //0E xx LD C,$xx
+			rc = operand[0];
+			pc += 2;
 			break;
-		case 0x05: //05 DECrement B
-			bc -= 0x0100;
+		
+		case 0x14:  //increment D
+			rd++;
 			pc += 1;
 			break;
 
-		case 0x20:  //20 xx JR NZ,$xx
-			if (!(flags(r, z, 0))) {
+		case 0x15:  //decrement D
+			rd--;
+			pc += 1;
+			break;
+
+		case 0x16:  //load xx into D
+			rd = operand[0];
+			pc += 2;
+			break;
+
+		case 0x19:  //add de to hl
+			rhl += r_rde();
+			check_carry32(rhl);
+			check_zero(rhl);
+			set_subtract(0);
+			check_hcarry(rhl, r_rde());
+			pc += 1;
+			break;
+
+		case 0x1e:   //LD E $xx 
+			re = operand[0];
+			pc += 2;
+			break;
+
+		case 0x1f: {//Rotate Right A
+			bool temp = r_sr('c');
+			w_sr('c', bool((ra & 0x80) >> 8));
+			ra = (ra * 2) + temp;
+			pc += 1;
+			break;
+		}
+
+		case 0x20: { //20 xx JR NZ,$xx
+			if (!r_sr('z')) {
 				if (operand[0] > 127)
 					pc += operand[0];
 				else
@@ -276,26 +410,207 @@ public:
 			else
 				pc += 1;
 			break;
+		}
 
-		default:
-			cout << "UNKNOWN OPERAND:";
-			cout << endl;
-			system("PAUSE");
+		case 0x21:   //21 bb aa LD HL,$aabb
+			rhl = aabb();
+			pc += 3;
 			break;
+
+		case 0x23:  //increment hl
+			rhl++;
+			pc += 1;
+			break;
+
+		case 0x32:  //32 LD (HL)-,A
+			memory[rhl] = ra;
+			rhl--;
+			pc += 1;
+			break;
+
+		case 0x56: //copy (hl) to d
+			rd = memory[rhl];
+			pc += 1;
+			break;
+
+		case 0x5e:  //copy value pointed at by hl in e
+			re = memory[rhl];
+			pc += 1;
+			break;
+
+		case 0x5f: //copy a to e
+			re = ra;
+			pc += 1;
+			break;
+					
+		case 0x7a:  //copy d to a
+			ra = rd;
+			pc += 1;
+			break;
+
+		case 0x82:  //add d to a
+			ra += rd;
+			check_carry(ra);
+			check_zero(ra);
+			set_subtract(0);
+			check_hcarry(ra, rd);
+			pc += 1;
+			break;
+
+		case 0x87: {  //double a
+			uint16_t temp = ra;
+			ra += ra;
+			check_carry(ra);
+			check_zero(ra);
+			set_subtract(0);
+			check_hcarry(ra, temp);
+			pc += 1;
+			break;
+		}
+
+		case 0x89: {  //adc A c,  add c and carry flag to A
+			ra += rc + (r_sr('c'));
+			check_carry(ra);
+			check_zero(ra);
+			set_subtract(0);
+			check_hcarry(ra, rc);
+			pc += 1;
+			break;
+		}
+
+		case 0x8f: { //add a and fc to a
+			uint16_t temp = r_sr('c') + ra;
+			ra = (ra * 2) + r_sr('c');
+			check_carry(ra);
+			check_zero(ra);
+			set_subtract(0);
+			check_hcarry(ra, temp);
+			pc += 1;
+			break;
+		}
+
+		case 0xaf:  //XOR A A
+			ra = 0x0000;
+			pc += 1;
+			break;
+
+		case 0xc3:   //JMP bb aa
+			pc = bbaa();
+			break;
+
+		case 0xc5: //push bc
+			push16(r_rbc());
+			pc += 1;
+			break;
+
+		case 0xcd: //call subroutine at bbaa
+			push16(pc);
+			pc = bbaa();
+			break;
+
+		case 0xcf: //call subroutine at 08h
+			push16(pc);
+			pc = 0x08;
+			break;
+
+		case 0xd5: // push de
+			push16(r_rde());
+			pc += 1;
+			break;
+
+		case 0xdf:   // call subroutine at 0018h
+			push16(pc);
+			pc = 0x0180;
+			break;
+
+		case 0xe1:  //pop into hl
+			rhl = pop16();
+			pc += 1;
+			break;
+
+		case 0xe5: //push hl
+			push16(rhl);
+			pc += 1;
+			break;
+
+		case 0xe9:  //jmp (hl)
+			pc = memory[rhl];
+			break;
+
+		case 0xef:  //call sub at 28h
+			push16(pc);
+			pc = 0x28;
+			break;
+
+		case 0xf0: { //ld a from (ff00h + xx)
+			ra = memory[(0xff00 + operand[0])];
+			pc += 2;
+			break;
+		}
+
+		case 0xf5: {// push af
+			push16(r_raf());
+			pc += 1;
+			break;
+		}
+
+		case 0xff: {  //FF RST $38
+			pc = 0x38;
+			break;
+		}
+
+		default: {
+			cout << "unknown opcode," << endl << "pc: 0x" << hex << (int)pc << "\nopcode: 0x" << hex << (int)opcode;
+			cout << endl;
+			break;
+		}
 		};
 
 		return;
 	}
 
 
+	void ginit() {
+		if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+			std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
+			return;
+		}
+		window = SDL_CreateWindow("C8emu", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, SDL_WINDOW_SHOWN);
+		if (window == NULL) {
+			std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
+			return;
+		}
+		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+		if (renderer == NULL) {
+			printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
+			return;
+		}
+		else {
+			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+		}
 
+	}
 
+	void drawDisplay() {
 
+		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+		SDL_RenderClear(renderer);
 
+		int w = SCREEN_WIDTH / 64;
+		int h = SCREEN_HEIGHT / 32;
 
+		for (int y = 0; y < SCREEN_HEIGHT; y++) {
+			for (int x = 0; x < SCREEN_WIDTH; x++) {
+				//TODO refine graphics
+				SDL_Rect fillRect = { x*w, y*h, w, h };
+				SDL_SetRenderDrawColor(renderer, gfx[x][y][0], gfx[x][y][1], gfx[x][y][2], 0xff);
+				SDL_RenderFillRect(renderer, &fillRect);
 
+			}
+		}
+		SDL_RenderPresent(renderer);
 
-
+	}
 
 };
 
