@@ -191,6 +191,37 @@ private:
 		return;
 	}
 
+	bool read_carry() {
+		return r_sr('c');
+	}
+
+	bool read_hcarry() {
+		return r_sr('h');
+	}
+
+	bool read_subtract() {
+		return r_sr('s');
+	}
+
+	bool read_zero() {
+		return r_sr('z');
+	}
+
+	void set_carry(bool value) {
+		w_sr('c', value);
+		return;
+	}
+
+	void set_hcarry(bool value) {
+		w_sr('h', value);
+		return;
+	}
+
+	void set_zero(bool value) {
+		w_sr('z', value);
+		return;
+	}
+
 
 	uint16_t r_rde() {
 		uint16_t temp = 0;
@@ -332,7 +363,7 @@ public:
 
 
 
-	void cycle() {  //fetch, execute
+void cycle() {  //fetch, execute
 		opcode = memory[pc];
 		operand[0] = memory[pc + 1];
 		operand[1] = memory[pc + 2];
@@ -350,6 +381,8 @@ public:
 			
 		case 0x05: //05 DECrement B
 			rb--;
+			set_subtract(1);
+			check_zero(rb);
 			pc += 1;
 			break;
 
@@ -357,6 +390,13 @@ public:
 			rb = operand[0];
 			pc += 2;
 			break; }
+
+		case 0x0d:  //decrement C
+			rc--;
+			set_subtract(1);  //TODO flag set/check on 8bit increments/decrements
+			check_zero(rc);
+			pc += 1;
+			break;
 
 		case 0x0e:   //0E xx LD C,$xx
 			rc = operand[0];
@@ -381,7 +421,6 @@ public:
 		case 0x19:  //add de to hl
 			rhl += r_rde();
 			check_carry32(rhl);
-			check_zero(rhl);
 			set_subtract(0);
 			check_hcarry(rhl, r_rde());
 			pc += 1;
@@ -393,27 +432,36 @@ public:
 			break;
 
 		case 0x1f: {//Rotate Right A
-			bool temp = r_sr('c');
-			w_sr('c', bool((ra & 0x80) >> 8));
+			bool temp = read_carry();
+			set_carry(bool((ra & 0x80) >> 8));
 			ra = (ra * 2) + temp;
+			check_carry(ra);
+			set_subtract(0);
+			set_hcarry(0);
+			set_zero(0);
 			pc += 1;
 			break;
 		}
-
+				   
 		case 0x20: { //20 xx JR NZ,$xx
-			if (!r_sr('z')) {
-				if (operand[0] > 127)
-					pc += operand[0];
-				else
+			
+			if (read_zero() != 0) {
+				if (operand[0] >= 0x80) {
+					operand[0] = (operand[0]^0xff) +1 ;
 					pc -= operand[0];
+				}
+				else
+				{
+					pc += operand[0];
+				}
 			}
-			else
-				pc += 1;
+			
+				pc += 2;
 			break;
 		}
 
 		case 0x21:   //21 bb aa LD HL,$aabb
-			rhl = aabb();
+			rhl = bbaa();
 			pc += 3;
 			break;
 
@@ -426,6 +474,11 @@ public:
 			memory[rhl] = ra;
 			rhl--;
 			pc += 1;
+			break;
+
+		case 0x3e: //ld a $xx
+			ra = operand[0];
+			pc += 2;
 			break;
 
 		case 0x56: //copy (hl) to d
@@ -525,6 +578,8 @@ public:
 
 		case 0xe1:  //pop into hl
 			rhl = pop16();
+			check_carry32(rhl);
+			//TODO how to check half carry?
 			pc += 1;
 			break;
 
@@ -554,7 +609,7 @@ public:
 			break;
 		}
 
-		case 0xff: {  //FF RST $38
+		case 0xff: {  // RST $38
 			pc = 0x38;
 			break;
 		}
