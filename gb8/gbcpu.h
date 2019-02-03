@@ -1,10 +1,12 @@
-#include "include/SDL.h"
+#include <iostream>
+#include <SDL2\SDL.h>
+#include <string.h>
+
 
 using namespace std;
 
 const int SCREEN_WIDTH = 256;
 const int SCREEN_HEIGHT = 224;
-
 
 
 
@@ -302,7 +304,7 @@ public:
 	bool load_binary(string path) { //load rom starting at 0x200
 
 		char cpath[200];
-		strcpy_s(cpath, path.c_str());
+		strcpy(cpath, path.c_str());
 
 		return load_bin_char(cpath);
 
@@ -669,4 +671,3 @@ void cycle() {  //fetch, execute
 	}
 
 };
-
