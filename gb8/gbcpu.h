@@ -38,6 +38,8 @@ private:
 	uint16_t sp;
 	uint32_t rhl;
 
+	bool di;  //disable interrupt flag
+
 
 
 	uint16_t ra, rb, rc, rd, re; //registers
@@ -355,6 +357,8 @@ public:
 		re = 0;  //registers
 		rhl = 0;
 
+		di = 0;
+
 		sr = 0; //status register
 
 		sp = 0xdfff;
@@ -473,10 +477,20 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
+		case 0x31:  // LD aabb in SP register
+			sp = bbaa();
+			pc += 3;
+			break;
+
 		case 0x32:  //32 LD (HL)-,A
 			memory[rhl] = ra;
 			rhl--;
 			pc += 1;
+			break;
+
+		case 0x36:  //LD (HL),  operand0
+			memory[rhl] = operand[0];
+			pc += 2;
 			break;
 
 		case 0x3e: //ld a $xx
@@ -579,6 +593,12 @@ void cycle() {  //fetch, execute
 			pc = 0x0180;
 			break;
 
+		case 0xe0:  //save ra at FF00h + operand0
+			memory[0xff00+operand[0]]= ra;
+			pc +=2;
+			break;
+
+
 		case 0xe1:  //pop into hl
 			rhl = pop16();
 			check_carry32(rhl);
@@ -595,6 +615,13 @@ void cycle() {  //fetch, execute
 			pc = memory[rhl];
 			break;
 
+		case 0xea: {//LD (nn),rA
+			uint16_t temp = operand[0] + (operand[1] << 8);
+			memory[temp] = ra;
+			pc += 3;
+			break;
+		}
+
 		case 0xef:  //call sub at 28h
 			push16(pc);
 			pc = 0x28;
@@ -606,9 +633,29 @@ void cycle() {  //fetch, execute
 			break;
 		}
 
+		case 0xf3: {
+			//TODO implement interrupts, then disable them.
+			di = 1;
+			pc += 1;
+			break;
+		} 
+
 		case 0xf5: {// push af
 			push16(r_raf());
 			pc += 1;
+			break;
+		}
+
+		case 0xfe: {  // CP operand0 with a : Z if equal, N set, C and H as if it was ra- operand0
+			uint16_t temp = 0;
+			temp = ra - operand[0];
+			
+			check_zero(temp);
+			check_hcarry(temp, ra);
+			check_carry(temp);
+			set_subtract(1);
+
+			pc += 2;
 			break;
 		}
 
