@@ -377,6 +377,9 @@ public:
 
 
 void cycle() {  //fetch, execute
+		if (pc == 0x282a)
+			cout<<"we made it loading graphics!";
+
 		opcode = memory[pc];
 		operand[0] = memory[pc + 1];
 		operand[1] = memory[pc + 2];
@@ -399,15 +402,19 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
-		case 0x05: //05 DECrement B
+		case 0x05:{ //05 DECrement B
+			uint16_t temp = rb;
 			rb--;
 			set_subtract(1);
 			check_zero(rb);
+			check_carry(rb);
+			check_hcarry(rb, temp);
 			pc += 1;
-			break;
+			break; }
 
 		case 0x06: { //06 xx LD B,$xx
 			rb = operand[0];
+			check_zero(rb);
 			pc += 2;
 			break; }
 
@@ -478,7 +485,7 @@ void cycle() {  //fetch, execute
 				   
 		case 0x20: { //20 xx JR NZ,$xx
 			
-			if (read_zero() != 0) {
+			if (read_zero() == 0) {
 				if (operand[0] >= 0x80) {
 					operand[0] = (operand[0]^0xff) +1 ;
 					pc -= operand[0];
@@ -598,6 +605,7 @@ void cycle() {  //fetch, execute
 
 		case 0xaf:  //XOR A A
 			ra = 0x0000;
+			set_zero(1);
 			pc += 1;
 			break;
 
