@@ -181,6 +181,14 @@ private:
 		return;
 	}
 
+	void check_hcarry32(uint32_t result, uint32_t anyoperand) { // TODO experimental
+		if ((result & 0xff) < (anyoperand & 0xff) || (result & 0xffff) < (anyoperand & 0xffff))
+			w_sr('h', 1);
+		else
+			w_sr('h', 0);
+		return;
+	}
+
 	void check_zero(uint16_t value) {
 		if (value == 0) {
 			w_sr('z', 1);
@@ -246,7 +254,6 @@ private:
 		uint16_t temp = 0;
 		temp += rc;
 		temp += (rb << 8);
-
 		return temp;
 	}
 
@@ -260,7 +267,6 @@ private:
 		uint16_t temp = 0;
 		temp += sr;
 		temp += (ra << 8);
-
 		return temp;
 	}
 
@@ -385,7 +391,14 @@ void cycle() {  //fetch, execute
 			w_rbc(bbaa());
 			pc += 1;
 			break;
-			
+
+		case 0x04:  // increment B
+			rb++;
+			set_subtract(0);
+			check_zero(rb);
+			pc += 1;
+			break;
+
 		case 0x05: //05 DECrement B
 			rb--;
 			set_subtract(1);
@@ -397,6 +410,19 @@ void cycle() {  //fetch, execute
 			rb = operand[0];
 			pc += 2;
 			break; }
+
+		case 0x0b: {//DEC rbc
+			uint32_t tempo = r_rbc();  //TODO more efficient way?
+			w_rbc((tempo+0x1)); 
+			pc += 1;
+			break; }
+
+		case 0xc:  //increment c
+			rc++;
+			set_subtract(0);
+			check_zero(rc);
+			pc += 1;
+			break;
 
 		case 0x0d:  //decrement C
 			rc--;
@@ -477,6 +503,12 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
+		case 0x2a:   //LD (hl)+, a
+			ra = memory[rhl];
+			rhl += 0x1;
+			pc += 1;
+			break;
+
 		case 0x31:  // LD aabb in SP register
 			sp = bbaa();
 			pc += 3;
@@ -510,6 +542,11 @@ void cycle() {  //fetch, execute
 
 		case 0x5f: //copy a to e
 			re = ra;
+			pc += 1;
+			break;
+
+		case 0x78:  //copy rb to ra
+			ra = rb;
 			pc += 1;
 			break;
 					
@@ -564,6 +601,11 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
+		case 0xb1: //  OR C with A
+			rc = rc | ra;
+			pc += 1;
+			break;
+
 		case 0xc3:   //JMP bb aa
 			pc = bbaa();
 			break;
@@ -571,6 +613,10 @@ void cycle() {  //fetch, execute
 		case 0xc5: //push bc
 			push16(r_rbc());
 			pc += 1;
+			break;
+
+		case 0xc9: // RTS
+			pc = pop16();
 			break;
 
 		case 0xcd: //call subroutine at bbaa
@@ -602,7 +648,12 @@ void cycle() {  //fetch, execute
 		case 0xe1:  //pop into hl
 			rhl = pop16();
 			check_carry32(rhl);
-			//TODO how to check half carry?
+			//TODO halfcarry check, other operand ?
+			pc += 1;
+			break;
+
+		case 0xe2: //ld a at ff00h + rc
+			memory[0xff00+rc] = ra;
 			pc += 1;
 			break;
 
