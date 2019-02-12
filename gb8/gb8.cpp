@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 	}
 
 	for (;;) {
-
+		
 		cpu.cycle();
 	}
 
