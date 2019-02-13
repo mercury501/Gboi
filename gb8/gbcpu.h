@@ -1,26 +1,15 @@
 #include <iostream>
-#include <SDL2/SDL.h>
 #include <string.h>
-
+#include <SDL2/SDL.h>
+#include <fstream>  //debug purposes
 
 using namespace std;
 
 const int SCREEN_WIDTH = 256;
 const int SCREEN_HEIGHT = 224;
 
-
-
 class gbcpu {
 private:
-
-
-	uint16_t gfx[SCREEN_WIDTH][SCREEN_HEIGHT][3];
-
-	SDL_Window* window = NULL;
-	SDL_Texture* texture = NULL;
-	SDL_Renderer* renderer = NULL;
-
-	uint8_t memory[0xffff];
 
 	/*Flag register (F)bits:
 
@@ -38,7 +27,7 @@ private:
 	uint16_t sp;
 	uint32_t rhl;
 
-	bool di;  //disable interrupt flag
+	bool ie;  // interrupt enable flag
 
 
 
@@ -103,7 +92,7 @@ private:
 			return (sr & 0b01000000);
 
 		case 'z':
-			return (sr & 0b1000000);
+			return (sr & 0b10000000);
 
 		}
 	}
@@ -307,6 +296,8 @@ private:
 
 public:
 
+	uint8_t memory[0xffff]; //memory public, needs to be accessed by gpu
+
 
 
 	bool load_binary(string path) { //load rom starting at 0x200
@@ -344,6 +335,16 @@ public:
 		return 1;
 	}
 
+	void dump_memory(){
+		ofstream outfile ("memory.dump");
+		for (int i = 0; i < 0xffff; i++){
+		outfile << memory[i];
+		}
+		outfile.close();
+
+		return;
+	}
+
 	void initialize() {
 
 		for (int i = 0; i < 0x8100; i++)
@@ -356,6 +357,7 @@ public:
 	}
 
 	void soft_reset() {
+		
 		ra = 0;
 		rb = 0;
 		rc = 0;
@@ -363,7 +365,7 @@ public:
 		re = 0;  //registers
 		rhl = 0;
 
-		di = 0;
+		ie = 1;  //interrupt enable
 
 		sr = 0; //status register
 
@@ -377,9 +379,9 @@ public:
 
 
 void cycle() {  //fetch, execute
-		if (pc == 0x282a)
-			cout<<"we made it loading graphics!";
-
+		if (pc == 0x29a)
+			dump_memory();
+			
 		opcode = memory[pc];
 		operand[0] = memory[pc + 1];
 		operand[1] = memory[pc + 2];
@@ -431,12 +433,16 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
-		case 0x0d:  //decrement C
+		case 0x0d: { //decrement C
+			uint16_t temp = rc;
 			rc--;
 			set_subtract(1);  //TODO flag set/check on 8bit increments/decrements
 			check_zero(rc);
+			check_carry(rc);
+			check_hcarry(rc, temp);
 			pc += 1;
 			break;
+		}
 
 		case 0x0e:   //0E xx LD C,$xx
 			rc = operand[0];
@@ -484,7 +490,7 @@ void cycle() {  //fetch, execute
 		}
 				   
 		case 0x20: { //20 xx JR NZ,$xx
-			
+			bool temp = read_zero();
 			if (read_zero() == 0) {
 				if (operand[0] >= 0x80) {
 					operand[0] = (operand[0]^0xff) +1 ;
@@ -694,7 +700,7 @@ void cycle() {  //fetch, execute
 
 		case 0xf3: {
 			//TODO implement interrupts, then disable them.
-			di = 1;
+			ie = 0;
 			pc += 1;
 			break;
 		} 
@@ -734,46 +740,69 @@ void cycle() {  //fetch, execute
 	}
 
 
-	void ginit() {
-		if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-			std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
-			return;
-		}
-		window = SDL_CreateWindow("C8emu", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, SDL_WINDOW_SHOWN);
-		if (window == NULL) {
-			std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
-			return;
-		}
-		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-		if (renderer == NULL) {
-			printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
-			return;
-		}
-		else {
-			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-		}
+};
 
-	}
 
-	void drawDisplay() {
+class gpu{
+    private:
 
-		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-		SDL_RenderClear(renderer);
+        
 
-		int w = SCREEN_WIDTH / 64;
-		int h = SCREEN_HEIGHT / 32;
+        uint16_t gfx[SCREEN_WIDTH][SCREEN_HEIGHT][3];
 
-		for (int y = 0; y < SCREEN_HEIGHT; y++) {
-			for (int x = 0; x < SCREEN_WIDTH; x++) {
-				//TODO refine graphics
-				SDL_Rect fillRect = { x*w, y*h, w, h };
-				SDL_SetRenderDrawColor(renderer, gfx[x][y][0], gfx[x][y][1], gfx[x][y][2], 0xff);
-				SDL_RenderFillRect(renderer, &fillRect);
+    	SDL_Window* window = NULL;
+	    SDL_Texture* texture = NULL;
+    	SDL_Renderer* renderer = NULL;
 
+
+
+
+
+    public:
+
+        void ginit() {
+			if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+				std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
+				return;
 			}
-		}
-		SDL_RenderPresent(renderer);
+			window = SDL_CreateWindow("C8emu", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, SDL_WINDOW_SHOWN);
+			if (window == NULL) {
+				std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
+				return;
+			}
+			renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+			if (renderer == NULL) {
+				printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
+				return;
+			}
+			else {
+				SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+			}
 
-	}
+		}
+
+		void drawDisplay() {
+
+			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+			SDL_RenderClear(renderer);
+
+			int w = SCREEN_WIDTH / 64;
+			int h = SCREEN_HEIGHT / 32;
+
+			for (int y = 0; y < SCREEN_HEIGHT; y++) {
+				for (int x = 0; x < SCREEN_WIDTH; x++) {
+				
+					SDL_Rect fillRect = { x*w, y*h, w, h };
+					SDL_SetRenderDrawColor(renderer, gfx[x][y][0], gfx[x][y][1], gfx[x][y][2], 0xff);
+					SDL_RenderFillRect(renderer, &fillRect);
+
+				}
+			}
+			SDL_RenderPresent(renderer);
+
+		}
+
+
+
 
 };

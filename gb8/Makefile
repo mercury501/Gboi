@@ -1,14 +1,14 @@
 #OBJS specifies which files to compile as part of the project
-OBJS = gb8.cpp gbcpu.h
+OBJS = gb8.cpp gbcpu.h 
 
 #CC specifies which compiler we're using
 CC = g++
 
 #INCLUDE_PATHS specifies the additional include paths we'll need
-#INCLUDE_PATHS = -IC:\mingw\mingw32\include\SDL2
+INCLUDE_PATHS = -IC:\mingw\mingw32\include\SDL2
 
 #LIBRARY_PATHS specifies the additional library paths we'll need
-#LIBRARY_PATHS = -LC:\mingw\mingw32\lib
+LIBRARY_PATHS = -LC:\mingw\mingw32\lib
 
 #COMPILER_FLAGS specifies the additional compilation options we're using
 # -w suppresses all warnings
@@ -16,10 +16,10 @@ CC = g++
 COMPILER_FLAGS = -w -g
 
 #LINKER_FLAGS specifies the libraries we're linking against
-LINKER_FLAGS =  -lSDL2main -lSDL2
+LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2
 
 #OBJ_NAME specifies the name of our exectuable
-OBJ_NAME = gb8.out
+OBJ_NAME = gb8.exe
 
 #This is the target that compiles our executable
 all : $(OBJS)
