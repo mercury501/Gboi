@@ -15,6 +15,8 @@ int main(int argc, char* argv[])
 	
 	gbcpu cpu;
 
+	gpu gbpu;
+
 	int w = 512;
 	int h = 512;
 
@@ -50,9 +52,15 @@ int main(int argc, char* argv[])
 
 	}
 
+	gbpu.ginit();
+
 	for (;;) {
 		
 		cpu.cycle();
+
+		gbpu.drawDisplay(cpu.memory);
+		gbpu.dump_fbuffer();
+		cout<<endl;
 	}
 
 	return 0;
