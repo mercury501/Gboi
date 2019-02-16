@@ -774,7 +774,7 @@ void cycle() {  //fetch, execute
 				std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
 				return;
 			}
-			window = SDL_CreateWindow("GBoi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH *2, SCREEN_HEIGHT *2, SDL_WINDOW_SHOWN);
+			window = SDL_CreateWindow("GBoi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 			if (window == NULL) {
 				std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
 				return;
@@ -822,16 +822,17 @@ void cycle() {  //fetch, execute
 			}
 
 			
-
+			dump_fbuffer();
 			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 			SDL_RenderClear(renderer);
 			
-
-			for (int lelo = 0; lelo < 12; lelo++)
-				drawTile(lelo , 0, lelo + 1, 0);
 			
-			drawTile(0, 1, 13 , 0 );
-			drawTile(0, 1, 14 , 0 );
+			//for (int lelo = 0; lelo < 2; lelo++)
+				drawTile(2 , 0, 2, 0);
+				//lelo = 1;
+				//drawTile(1 , 0, 2, 0);
+			//drawTile(0, 1, 13 , 0 );
+			//drawTile(0, 1, 14 , 0 );
 			//int w = SCREEN_WIDTH / 64;
 			//int h = SCREEN_HEIGHT / 32;
 
@@ -856,18 +857,18 @@ void cycle() {  //fetch, execute
 	void drawTile(int xpos, int ypos, int xindex, int yindex){
 
 			xpos *= 8;
-			ypos *=8;
-			xindex *=8;
-			yindex *=8;
+			ypos *= 8;
+			xindex *= 8;
+			yindex *= 8;
 
 			for (int y = ypos; y < ypos + 8; y++) {  
 				
 				for (int x = xpos; x < xpos + 8; x++) {
 				
-					SDL_Rect fillRect = { x, y, 2, 2};
+					SDL_Rect fillRect = { x, y, 1, 1};
 					SDL_SetRenderDrawColor(renderer, gfx[xindex + x][yindex + y] * 0x55, gfx[xindex + x][yindex + y] * 0x55, gfx[xindex + x][yindex + y] * 0x55, 0xff);
 					SDL_RenderFillRect(renderer, &fillRect);
-					
+					//1020
 				}
 			}  
 
