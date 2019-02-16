@@ -772,7 +772,7 @@ void cycle() {  //fetch, execute
 				std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
 				return;
 			}
-			window = SDL_CreateWindow("C8emu", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH *2, SCREEN_HEIGHT *2, SDL_WINDOW_SHOWN);
+			window = SDL_CreateWindow("GBoi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH *2, SCREEN_HEIGHT *2, SDL_WINDOW_SHOWN);
 			if (window == NULL) {
 				std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
 				return;
@@ -792,25 +792,26 @@ void cycle() {  //fetch, execute
 			
 			//32 tiles hor 28 ver
 			uint16_t tile_address;
-			for(int ord = 28; ord > 0; ord--) {
+			for(int row = 0; row < 1; row ++) {  
+												
+				for (int col = 0; col < 17; col++) {
 
-				for (int asc = 0; asc < 32; asc++) {
-
-					if (asc == 9) {
-						uint8_t mammt = 0;
-					}
+					tile_address = 0x8000 + (col * 16) + (row * 32 * 16);
+					cout<< (int)tile_address << " ";
 					for (int pxline = 0; pxline <= 7; pxline++) {
 
-						tile_address = 0x8000 + ((28 - ord) * 32) + (asc * 16) + (pxline * 2);
+						//tile_address = 0x8000 + ((row) * 32) + (col * 16) + (pxline * 2);
 
-						gfx [asc][SCREEN_HEIGHT - pxline]     = ((memory[tile_address] & 0b10000000) >> 6) + ((memory[tile_address + 1] & 0b10000000) >> 7);
-						gfx [asc + 1][SCREEN_HEIGHT - pxline] = ((memory[tile_address] & 0b01000000) >> 5) + ((memory[tile_address + 1] & 0b01000000) >> 6);
-						gfx [asc + 2][SCREEN_HEIGHT - pxline] = ((memory[tile_address] & 0b00100000) >> 4) + ((memory[tile_address + 1] & 0b00100000) >> 5);
-						gfx [asc + 3][SCREEN_HEIGHT - pxline] = ((memory[tile_address] & 0b00010000) >> 3) + ((memory[tile_address + 1] & 0b00010000) >> 4);
-						gfx [asc + 4][SCREEN_HEIGHT - pxline] = ((memory[tile_address] & 0b00001000) >> 2) + ((memory[tile_address + 1] & 0b00001000) >> 3);
-						gfx [asc + 5][SCREEN_HEIGHT - pxline] = ((memory[tile_address] & 0b00000100) >> 1) + ((memory[tile_address + 1] & 0b00000100) >> 2);
-						gfx [asc + 6][SCREEN_HEIGHT - pxline] = (memory[tile_address] & 0b00000010)        + ((memory[tile_address + 1] & 0b00000010) >> 1);
-						gfx [asc + 7][SCREEN_HEIGHT - pxline] = ((memory[tile_address] & 0b00000001) << 1) + (memory[tile_address + 1] & 0b00000001);
+						
+
+						gfx [col][pxline + (row * 8)]     = ((memory[tile_address] & 0b10000000) >> 6) + ((memory[tile_address + 1] & 0b10000000) >> 7);
+						gfx [col + 1][pxline + (row * 8)] = ((memory[tile_address] & 0b01000000) >> 5) + ((memory[tile_address + 1] & 0b01000000) >> 6);
+						gfx [col + 2][pxline + (row * 8)] = ((memory[tile_address] & 0b00100000) >> 4) + ((memory[tile_address + 1] & 0b00100000) >> 5);
+						gfx [col + 3][pxline + (row * 8)] = ((memory[tile_address] & 0b00010000) >> 3) + ((memory[tile_address + 1] & 0b00010000) >> 4);
+						gfx [col + 4][pxline + (row * 8)] = ((memory[tile_address] & 0b00001000) >> 2) + ((memory[tile_address + 1] & 0b00001000) >> 3);
+						gfx [col + 5][pxline + (row * 8)] = ((memory[tile_address] & 0b00000100) >> 1) + ((memory[tile_address + 1] & 0b00000100) >> 2);
+						gfx [col + 6][pxline + (row * 8)] = (memory[tile_address] & 0b00000010)        + ((memory[tile_address + 1] & 0b00000010) >> 1);
+						gfx [col + 7][pxline + (row * 8)] = ((memory[tile_address] & 0b00000001) << 1) + (memory[tile_address + 1] & 0b00000001);
 
 					}
 
@@ -819,12 +820,12 @@ void cycle() {  //fetch, execute
 			}
 
 			
-			for(int ord = 2; ord > 0; ord--) {
+			for(int ord = 0; ord < 10; ord++) {
 
-				for (int asc = 0; asc < 3; asc++) {
+				for (int asc = 0; asc < 10; asc++) {
 					std::cout << std::endl;
 					for (int pxline = 0; pxline <= 7; pxline++) {
-						std::cout << gfx[asc][ord] << " ";
+						std::cout << (int)gfx[asc][ord] << " ";
 
 					}}}
 
