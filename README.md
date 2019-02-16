@@ -1,2 +1,2 @@
 # Gboi
-beginner project gameboy emulator in c++ with sdl2
+beginner project gameboy emulator in c++ with sdl2.
