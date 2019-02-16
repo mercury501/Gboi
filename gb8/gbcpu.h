@@ -756,12 +756,14 @@ void cycle() {  //fetch, execute
 
 	void dump_fbuffer(){
 		
-		for (int i = 0; i < SCREEN_WIDTH; i++){
-			cout << endl;
-			for(int j = 0; j < SCREEN_HEIGHT; j++)
-				cout << hex << gfx[i][j] << " ";
-		}
 		
+			for (int i = 0; i < 32; i++){
+				cout << endl;
+				for(int j = 0; j < 32; j++)
+					cout << (int)gfx[j][i] << " ";
+			}
+		
+			cout<<endl;
 		
 
 		return;
@@ -792,65 +794,85 @@ void cycle() {  //fetch, execute
 			
 			//32 tiles hor 28 ver
 			uint16_t tile_address;
-			for(int row = 0; row < 1; row ++) {  
-												
+			for(int row = 0; row < 4; row++) {  
+											
 				for (int col = 0; col < 17; col++) {
 
-					tile_address = 0x8000 + (col * 16) + (row * 32 * 16);
-					cout<< (int)tile_address << " ";
+					tile_address = 0x8000 + (col * 16) + (row * 32 * 16) - 2;
+					//cout<< (int)tile_address << " ";
+					
 					for (int pxline = 0; pxline <= 7; pxline++) {
-
-						//tile_address = 0x8000 + ((row) * 32) + (col * 16) + (pxline * 2);
-
 						
+						tile_address +=2;
 
-						gfx [col][pxline + (row * 8)]     = ((memory[tile_address] & 0b10000000) >> 6) + ((memory[tile_address + 1] & 0b10000000) >> 7);
-						gfx [col + 1][pxline + (row * 8)] = ((memory[tile_address] & 0b01000000) >> 5) + ((memory[tile_address + 1] & 0b01000000) >> 6);
-						gfx [col + 2][pxline + (row * 8)] = ((memory[tile_address] & 0b00100000) >> 4) + ((memory[tile_address + 1] & 0b00100000) >> 5);
-						gfx [col + 3][pxline + (row * 8)] = ((memory[tile_address] & 0b00010000) >> 3) + ((memory[tile_address + 1] & 0b00010000) >> 4);
-						gfx [col + 4][pxline + (row * 8)] = ((memory[tile_address] & 0b00001000) >> 2) + ((memory[tile_address + 1] & 0b00001000) >> 3);
-						gfx [col + 5][pxline + (row * 8)] = ((memory[tile_address] & 0b00000100) >> 1) + ((memory[tile_address + 1] & 0b00000100) >> 2);
-						gfx [col + 6][pxline + (row * 8)] = (memory[tile_address] & 0b00000010)        + ((memory[tile_address + 1] & 0b00000010) >> 1);
-						gfx [col + 7][pxline + (row * 8)] = ((memory[tile_address] & 0b00000001) << 1) + (memory[tile_address + 1] & 0b00000001);
+						gfx [(col * 8)][pxline + (row * 8)]     = ((memory[tile_address] & 0b10000000) >> 6) + ((memory[tile_address + 1] & 0b10000000) >> 7);
+						gfx [(col * 8) + 1 ][pxline + (row * 8)] = ((memory[tile_address] & 0b01000000) >> 5) + ((memory[tile_address + 1] & 0b01000000) >> 6);
+						gfx [(col * 8) + 2][pxline + (row * 8)] = ((memory[tile_address] & 0b00100000) >> 4) + ((memory[tile_address + 1] & 0b00100000) >> 5);
+						gfx [(col * 8) + 3][pxline + (row * 8)] = ((memory[tile_address] & 0b00010000) >> 3) + ((memory[tile_address + 1] & 0b00010000) >> 4);
+						gfx [(col * 8) + 4][pxline + (row * 8)] = ((memory[tile_address] & 0b00001000) >> 2) + ((memory[tile_address + 1] & 0b00001000) >> 3);
+						gfx [(col * 8) + 5][pxline + (row * 8)] = ((memory[tile_address] & 0b00000100) >> 1) + ((memory[tile_address + 1] & 0b00000100) >> 2);
+						gfx [(col * 8) + 6][pxline + (row * 8)] = (memory[tile_address] & 0b00000010)        + ((memory[tile_address + 1] & 0b00000010) >> 1);
+						gfx [(col * 8) + 7][pxline + (row * 8)] = ((memory[tile_address] & 0b00000001) << 1) + (memory[tile_address + 1] & 0b00000001);
 
+						//dump_fbuffer();
 					}
-
+					//dump_fbuffer();
 				}
 
 			}
 
 			
-			for(int ord = 0; ord < 10; ord++) {
-
-				for (int asc = 0; asc < 10; asc++) {
-					std::cout << std::endl;
-					for (int pxline = 0; pxline <= 7; pxline++) {
-						std::cout << (int)gfx[asc][ord] << " ";
-
-					}}}
 
 			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 			SDL_RenderClear(renderer);
+			
 
+			for (int lelo = 0; lelo < 12; lelo++)
+				drawTile(lelo , 0, lelo + 1, 0);
+			
+			drawTile(0, 1, 13 , 0 );
+			drawTile(0, 1, 14 , 0 );
 			//int w = SCREEN_WIDTH / 64;
 			//int h = SCREEN_HEIGHT / 32;
 
-			for (int y = 0; y < SCREEN_HEIGHT; y++) {  //TODO fix quad render
+			/* for (int y = 0; y < SCREEN_HEIGHT; y++) {  //TODO fix quad render
 				for (int x = 0; x < SCREEN_WIDTH; x++) {
 				
-					SDL_Rect fillRect = { x * 2, y * 2, 2, 2};
+					SDL_Rect fillRect = { x, y, 2, 2};
 					SDL_SetRenderDrawColor(renderer, gfx[x][y] * 0x55, gfx[x][y] * 0x55, gfx[x][y] * 0x55, 0xff);
 					SDL_RenderFillRect(renderer, &fillRect);
 
 				}
-			} 
+			}  */
 
 			
 
 			SDL_RenderPresent(renderer);
-
+			
+			cout<<endl;
 		}
 
+
+	void drawTile(int xpos, int ypos, int xindex, int yindex){
+
+			xpos *= 8;
+			ypos *=8;
+			xindex *=8;
+			yindex *=8;
+
+			for (int y = ypos; y < ypos + 8; y++) {  
+				
+				for (int x = xpos; x < xpos + 8; x++) {
+				
+					SDL_Rect fillRect = { x, y, 2, 2};
+					SDL_SetRenderDrawColor(renderer, gfx[xindex + x][yindex + y] * 0x55, gfx[xindex + x][yindex + y] * 0x55, gfx[xindex + x][yindex + y] * 0x55, 0xff);
+					SDL_RenderFillRect(renderer, &fillRect);
+					
+				}
+			}  
+
+
+	}
 
 };
 
