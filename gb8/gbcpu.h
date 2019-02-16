@@ -757,10 +757,20 @@ void cycle() {  //fetch, execute
 	void dump_fbuffer(){
 		
 		
-			for (int i = 0; i < 32; i++){
+			for (int i = 0; i < 8; i++){
 				cout << endl;
-				for(int j = 0; j < 32; j++)
-					cout << (int)gfx[j][i] << " ";
+				for(int j = 0; j < 128; j++)
+					
+					if (gfx[j][i] == 0){
+						cout << " ";
+					}
+					else
+					{
+						cout << "X";
+					}
+					
+					
+					cout << " ";
 			}
 		
 			cout<<endl;
@@ -796,7 +806,7 @@ void cycle() {  //fetch, execute
 			uint16_t tile_address;
 			for(int row = 0; row < 4; row++) {  
 											
-				for (int col = 0; col < 17; col++) {
+				for (int col = 0; col < 32; col++) {
 
 					tile_address = 0x8000 + (col * 16) + (row * 32 * 16) - 2;
 					//cout<< (int)tile_address << " ";
@@ -814,9 +824,9 @@ void cycle() {  //fetch, execute
 						gfx [(col * 8) + 6][pxline + (row * 8)] = (memory[tile_address] & 0b00000010)        + ((memory[tile_address + 1] & 0b00000010) >> 1);
 						gfx [(col * 8) + 7][pxline + (row * 8)] = ((memory[tile_address] & 0b00000001) << 1) + (memory[tile_address + 1] & 0b00000001);
 
-						//dump_fbuffer();
+						
 					}
-					//dump_fbuffer();
+					
 				}
 
 			}
@@ -827,25 +837,13 @@ void cycle() {  //fetch, execute
 			SDL_RenderClear(renderer);
 			
 			
-			//for (int lelo = 0; lelo < 2; lelo++)
-				drawTile(2 , 0, 2, 0);
+			for (int lelo = 0; lelo < 13; lelo++)
+				drawTile(lelo , 0, lelo, 0);
 				//lelo = 1;
-				//drawTile(1 , 0, 2, 0);
-			//drawTile(0, 1, 13 , 0 );
-			//drawTile(0, 1, 14 , 0 );
-			//int w = SCREEN_WIDTH / 64;
-			//int h = SCREEN_HEIGHT / 32;
-
-			/* for (int y = 0; y < SCREEN_HEIGHT; y++) {  //TODO fix quad render
-				for (int x = 0; x < SCREEN_WIDTH; x++) {
 				
-					SDL_Rect fillRect = { x, y, 2, 2};
-					SDL_SetRenderDrawColor(renderer, gfx[x][y] * 0x55, gfx[x][y] * 0x55, gfx[x][y] * 0x55, 0xff);
-					SDL_RenderFillRect(renderer, &fillRect);
-
-				}
-			}  */
-
+			for (int biag = 1; biag < 20; biag ++)	
+				drawTile(biag , 1, 12 + biag, 0);
+				
 			
 
 			SDL_RenderPresent(renderer);
@@ -854,8 +852,8 @@ void cycle() {  //fetch, execute
 		}
 
 
-	void drawTile(int xpos, int ypos, int xindex, int yindex){
-
+	void drawTile(int xpos, int ypos, int xindex, int yindex){  // takes input x and y tile position, and x y index of tile in gfx
+																
 			xpos *= 8;
 			ypos *= 8;
 			xindex *= 8;
@@ -866,9 +864,9 @@ void cycle() {  //fetch, execute
 				for (int x = xpos; x < xpos + 8; x++) {
 				
 					SDL_Rect fillRect = { x, y, 1, 1};
-					SDL_SetRenderDrawColor(renderer, gfx[xindex + x][yindex + y] * 0x55, gfx[xindex + x][yindex + y] * 0x55, gfx[xindex + x][yindex + y] * 0x55, 0xff);
+					SDL_SetRenderDrawColor(renderer, gfx[xindex + (x - xpos)][yindex + (y - ypos)] * 0x55, gfx[xindex + (x - xpos)][yindex + (y - ypos)] * 0x55, gfx[xindex + (x - xpos)][yindex + (y - ypos)] * 0x55, 0xff);
 					SDL_RenderFillRect(renderer, &fillRect);
-					//1020
+					
 				}
 			}  
 
