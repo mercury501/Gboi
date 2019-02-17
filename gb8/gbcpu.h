@@ -745,7 +745,7 @@ void cycle() {  //fetch, execute
 		}
 
 		default: {
-			cout << "unknown opcode," << endl << "pc: 0x" << hex << (int)pc << "\nopcode: 0x" << hex << (int)opcode;
+			cout << "unknown opcode" ;
 			cout << endl;
 			break;
 		}
@@ -754,13 +754,10 @@ void cycle() {  //fetch, execute
 		return;
 	}
 
-	void dump_fbuffer(){
-		
-		
+	void dump_fbuffer(){	
 			for (int i = 0; i < 8; i++){
 				cout << endl;
 				for(int j = 0; j < 128; j++)
-					
 					if (gfx[j][i] == 0){
 						cout << " ";
 					}
@@ -768,14 +765,9 @@ void cycle() {  //fetch, execute
 					{
 						cout << "X";
 					}
-					
-					
 					cout << " ";
 			}
-		
 			cout<<endl;
-		
-
 		return;
 	}
 
@@ -800,7 +792,7 @@ void cycle() {  //fetch, execute
 
 		}
 
-		void drawDisplay() {
+		void drawDisplay() {  //TODO  make gfx 1 dimensional?
 			
 			//32 tiles hor 28 ver
 			uint16_t tile_address;
@@ -809,7 +801,7 @@ void cycle() {  //fetch, execute
 				for (int col = 0; col < 32; col++) {
 
 					tile_address = 0x8000 + (col * 16) + (row * 32 * 16) - 2;
-					//cout<< (int)tile_address << " ";
+					
 					
 					for (int pxline = 0; pxline <= 7; pxline++) {
 						
@@ -831,21 +823,20 @@ void cycle() {  //fetch, execute
 
 			}
 
-			
-			dump_fbuffer();
+					
 			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
 			SDL_RenderClear(renderer);
 			
-			
+			//draw routine
 			for (int lelo = 0; lelo < 13; lelo++)
 				drawTile(lelo , 0, lelo, 0);
-				//lelo = 1;
+				
 				
 			for (int biag = 1; biag < 20; biag ++)	
 				drawTile(biag , 1, 12 + biag, 0);
 				
 			
-
+			// display on screen
 			SDL_RenderPresent(renderer);
 			
 			cout<<endl;
