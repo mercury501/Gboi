@@ -401,21 +401,37 @@ public:
 		sp = 0xfffe;  //not dfff?
 		pc = 0x100;
 
+		memory [0xff44] = 0x94;  //tetris patch?
 		return;
 
 	}
 
 
-uint16_t oldpc = 0;
+long lel = 0;
 void cycle() {  //fetch, execute
-		if (pc == 0x2817)  //graphics loaded
+		if (pc == 0x2817){  //graphics loaded
 			cout<<"Graphics loaded!";
-		
-		if (pc == 0x2a2a)
-		cout<< pc << endl;
+			dump_fbuffer();
+		}
+		if (pc == 0x287e)
+		drawDisplay();
 
-		cout<< pc << endl;
-		oldpc = pc;
+		if ((lel % 15) == 0){
+		
+		drawDisplay();
+		//dump_fbuffer();
+		}
+		if (pc == 0x310)
+		cout << endl;
+
+		if (rb == 0)
+		cout << endl;
+
+		if ((rc == 0))
+			cout << endl;
+		
+		cout << (int)pc<< "            " << lel << endl;
+		 lel ++;
 
 		opcode = memory[pc];
 		operand[0] = memory[pc + 1];
@@ -446,9 +462,10 @@ void cycle() {  //fetch, execute
 			uint16_t temp = rb;
 			rb--;
 			set_subtract(1);
-			check_zero(rb);
 			//check_carry(rb);
 			check_hcarry(rb, temp);
+			rb = rb & 0xff;
+			check_zero(rb);
 			pc += 1;
 			break; }
 
@@ -461,10 +478,10 @@ void cycle() {  //fetch, execute
 		case 0x0b: {//DEC rbc
 			uint32_t tempo = r_rbc();  //TODO more efficient way?
 			w_rbc((tempo - 0x1)); 
-			set_subtract(1);
+			/*set_subtract(1);
 			if (r_rbc() == 0)
 				set_zero(1);
-			check_hcarry32(r_rbc(), tempo);
+			check_hcarry32(r_rbc(), tempo);  no flags on 16 bit inc/dec  */
 			pc += 1;
 			break; }
 
@@ -493,6 +510,23 @@ void cycle() {  //fetch, execute
 			rc = operand[0];
 			pc += 2;
 			break;
+
+		case 0x11: //load bbaa in rde
+			w_rde(bbaa());
+			pc += 3;
+			break;
+
+		case 0x12:// save ra in (rde)
+			memory[r_rde()] = ra;
+			pc += 1;
+			break;
+
+		case 0x13:{ //INCrement rde
+			uint16_t temp = r_rde();
+			w_rde(temp + 1);
+			pc += 1;
+			break;
+		}
 		
 		case 0x14:{  //increment D
 			uint8_t temp = rd;
@@ -545,8 +579,7 @@ void cycle() {  //fetch, execute
 		}
 				   
 		case 0x20: { //20 xx JR NZ,$xx
-			bool temp = read_zero();
-			if (read_zero() != 0) {
+			if (read_zero() == 0) {
 				if (operand[0] >= 0x80) {
 					operand[0] = (operand[0]^0xff) + 1 ;
 					pc -= operand[0];
@@ -711,20 +744,20 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0xb0:  // or rb with ra  
-		ra = ra | rb;
-		check_zero(ra);
-		set_subtract(0);
-		set_hcarry(0);
-		set_carry(0);
-		pc += 1;
-		break;
+			ra = ra | rb;
+			check_zero(ra);
+			set_subtract(0);
+			set_hcarry(0);
+			set_carry(0);
+			pc += 1;
+			break;
 
 		case 0xb1: //  OR C with A
-			rc = rc | ra;
+			ra = rc | ra;
 			set_hcarry(1);
 			set_subtract(0);
 			set_carry(0);
-			check_zero(rc);
+			check_zero(ra);
 			pc += 1;
 			break;
 
@@ -745,10 +778,16 @@ void cycle() {  //fetch, execute
 			switch (operand[0]){
 				
 				case 0x37:{  //swap half bytes of ra
-				uint8_t temp = (ra & 0xf);
-				ra = (ra >> 4) + (temp << 4);
-				break;
+					uint8_t temp = (ra & 0xf);
+					ra = (ra >> 4) + (temp << 4);
+					break;
 				}
+
+				case 0x87:  //test bit 6 of ra 
+					set_hcarry(1);
+					set_subtract(0);
+					check_zero((ra >> 5) & 0x1);   
+					break;
 
 
 
@@ -811,8 +850,8 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			break;
 
-		case 0xe9:  //jmp (hl)
-			pc = memory[rhl];
+		case 0xe9:  //jmp (hl) ?? or hl?
+			pc = rhl;
 			break;
 
 		case 0xea: {//LD (nn),rA
@@ -822,7 +861,7 @@ void cycle() {  //fetch, execute
 		}
 
 		case 0xef:  //call sub at 28h
-			push16(pc);
+			push16(pc + 1);
 			pc = 0x28;
 			break;
 
@@ -878,6 +917,7 @@ void cycle() {  //fetch, execute
 	}
 
 	void dump_fbuffer(){	
+		
 			for (int i = 0; i < 8; i++){
 				cout << endl;
 				for(int j = 0; j < 128; j++)
@@ -891,6 +931,7 @@ void cycle() {  //fetch, execute
 					cout << " ";
 			}
 			cout<<endl;
+		
 		return;
 	}
 

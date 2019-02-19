@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 		
 		cpu.cycle();
 
-		cpu.drawDisplay();
+		//cpu.drawDisplay();
 		
 		cout<<endl;
 	}
