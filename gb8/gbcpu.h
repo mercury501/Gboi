@@ -429,14 +429,15 @@ void cycle() {  //fetch, execute
 
 
 		if (pc == 0x282a){  //graphics loaded
+			draw_tileset();
 			cout<<"Graphics loaded!";
-			dump_fbuffer();
+			
 		}
 
 
-		if ((lel % 15) == 0){
+		if ((lel % 100000) == 0){
 		
-		drawDisplay();
+		draw_tileset();
 		
 		}
 
@@ -575,6 +576,15 @@ void cycle() {  //fetch, execute
 			check_carry32(rhl);
 			set_subtract(0);
 			check_hcarry(rhl, r_rde());
+			pc += 1;
+			break;
+
+		case 0x1a:  //AND rc ra * 010
+			ra = ra & rc;
+			check_zero(ra);
+			set_hcarry(1);
+			set_subtract(0);
+			set_carry(0);
 			pc += 1;
 			break;
 
@@ -925,7 +935,7 @@ void cycle() {  //fetch, execute
 		}
 
 		default: {
-			cout << "unknown opcode" ;
+			cout << "unknown opcode" << (int)opcode << "   " << (int)pc ;
 			break;
 		}
 		};
@@ -974,7 +984,7 @@ void cycle() {  //fetch, execute
 
 		}
 
-		void drawDisplay() {  
+		void draw_tileset() {  
 			
 			//populate gfx
 			update_tileram();
@@ -986,19 +996,18 @@ void cycle() {  //fetch, execute
 			//draw routine
 			
 			
-			for (int lo = 0; lo < 13; lo++)   //top half logo
+			for (int lo = 1; lo < 13; lo++)   //top half logo
 				draw_tile(lo , 0, lo);
 				
-				
-			for (int go = 1; go < 20; go ++)	//bottom half logo
-				draw_tile(go , 1, 12 + go);
-			
+			for (int bi = 1; bi < 20; bi ++)
+				for (int go = 1; go < 20; go ++)	//bottom half logo
+					draw_tile(go , bi, 12 + go + ((bi - 1) * 19));
 			
 			// display on screen
 			
 			SDL_RenderPresent(renderer);
 			
-			cout<<endl;
+			
 		}
 
 
