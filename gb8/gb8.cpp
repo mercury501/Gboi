@@ -54,13 +54,12 @@ int main(int argc, char* argv[])
 
 	cpu.ginit();
 
-	for (;;) {
+	for (;;) {  // fps 59.7, clock 4.19 Mhz  69 833 ca instructions per second
 		
 		cpu.cycle();
 
 		//cpu.drawDisplay();
 		
-		cout<<endl;
 	}
 
 	return 0;

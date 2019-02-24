@@ -8,6 +8,7 @@ using namespace std;
 const int SCREEN_WIDTH = 256;
 const int SCREEN_HEIGHT = 224;
 const int MAX_NUM_TILES = 385;    //how many tiles fit in vram
+const float CPU_CYCLE = 0.0000002 ; // in seconds
 
 class gbcpu {
 private:
@@ -313,6 +314,21 @@ private:
 		return temp;
 	}
 
+	void wr_mem(uint16_t address, uint8_t data){
+		switch(address){
+			case 0xff44: 
+				memory[address] = 0;
+				break;
+
+			default:{
+				memory[address] = data;
+				break;
+			}
+		};
+
+		return;
+	}
+
 
 
 
@@ -407,31 +423,32 @@ public:
 	}
 
 
-long lel = 0;
+long lel = 0;   //debug purposes
+
 void cycle() {  //fetch, execute
-		if (pc == 0x2817){  //graphics loaded
+
+
+		if (pc == 0x282a){  //graphics loaded
 			cout<<"Graphics loaded!";
 			dump_fbuffer();
 		}
-		if (pc == 0x287e)
-		drawDisplay();
+
 
 		if ((lel % 15) == 0){
 		
 		drawDisplay();
-		//dump_fbuffer();
-		}
-		if (pc == 0x310)
-		cout << endl;
-
-		if (rb == 0)
-		cout << endl;
-
-		if ((rc == 0))
-			cout << endl;
 		
-		cout << (int)pc<< "            " << lel << endl;
-		 lel ++;
+		}
+
+		if (lel % 1000 == 0)
+			cout << (int)pc<< "            " << lel << endl;
+
+		 
+
+		lel ++;
+
+		if (lel % 4 == 0)  //temporary LY bypass
+			memory[0xff44] = memory[0xff44] + 1;
 
 		opcode = memory[pc];
 		operand[0] = memory[pc + 1];
@@ -517,7 +534,7 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0x12:// save ra in (rde)
-			memory[r_rde()] = ra;
+			wr_mem(r_rde(), ra);
 			pc += 1;
 			break;
 
@@ -623,13 +640,13 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0x32:  //32 LD (HL)-,A
-			memory[rhl] = ra;
+			wr_mem(rhl, ra);
 			rhl--;
 			pc += 1;
 			break;
 
 		case 0x36:  //LD (HL),  operand0
-			memory[rhl] = operand[0];
+			wr_mem(rhl, operand[0]);
 			pc += 2;
 			break;
 
@@ -822,7 +839,7 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0xe0:  //save ra at FF00h + operand0
-			memory[0xff00+operand[0]]= ra;
+			wr_mem((0xff00 + operand[0]), ra);
 			pc +=2;
 			break;
 
@@ -835,8 +852,8 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0xe2: //ld a at ff00h + rc
-			memory[0xff00+rc] = ra;
-			pc += 1;
+				wr_mem((0xff00 + rc), ra);
+				pc += 1;
 			break;
 
 		case 0xe5: //push hl
@@ -855,7 +872,7 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0xea: {//LD (nn),rA
-			memory[bbaa()] = ra;
+			wr_mem(bbaa(), ra);
 			pc += 3;
 			break;
 		}
