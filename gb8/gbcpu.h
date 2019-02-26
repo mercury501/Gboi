@@ -16,8 +16,6 @@ private:
 	uint8_t vram_init[0x1a0] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xF0,0x00,0xF0,0x00,0xFC,0x00,0xFC,0x00,0xFC,0x00,0xFC,0x00,0xF3,0x00,0xF3,0x00,0x3C,0x00,0x3C,0x00,0x3C,0x00,0x3C,0x00,0x3C,0x00,0x3C,0x00,0x3C,0x00,0x3C,0x00,0xF0,0x00,0xF0,0x00,0xF0,0x00,0xF0,0x00,0x00,0x00,0x00,0x00,0xF3,0x00,0xF3,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xCF,0x00,0xCF,0x00,0x00,0x00,0x00,0x00,0x0F,0x00,0x0F,0x00,0x3F,0x00,0x3F,0x00,0x0F,0x00,0x0F,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0x00,0xC0,0x00,0x0F,0x00,0x0F,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xF0,0x00,0xF0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xF3,0x00,0xF3,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0x00,0xC0,0x00,0x03,0x00,0x03,0x00,0x03,0x00,0x03,0x00,0x03,0x00,0x03,0x00,0xFF,0x00,0xFF,0x00,0xC0,0x00,0xC0,0x00,0xC0,0x00,0xC0,0x00,0xC0,0x00,0xC0,0x00,0xC3,0x00,0xC3,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xFC,0x00,0xFC,0x00,0xF3,0x00,0xF3,0x00,0xF0,0x00,0xF0,0x00,0xF0,0x00,0xF0,0x00,0xF0,0x00,0xF0,0x00,0x3C,0x00,0x3C,0x00,0xFC,0x00,0xFC,0x00,0xFC,0x00,0xFC,0x00,0x3C,0x00,0x3C,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xC3,0x00,0xC3,0x00,0xC3,0x00,0xC3,0x00,0xC3,0x00,0xC3,0x00,0xCF,0x00,0xCF,0x00,0xCF,0x00,0xCF,0x00,0xCF,0x00,0xCF,0x00,0xCF,0x00,0xCF,0x00,0x3C,0x00,0x3C,0x00,0x3F,0x00,0x3F,0x00,0x3C,0x00,0x3C,0x00,0x0F,0x00,0x0F,0x00,0x3C,0x00,0x3C,0x00,0xFC,0x00,0xFC,0x00,0x00,0x00,0x00,0x00,0xFC,0x00,0xFC,0x00,0xFC,0x00,0xFC,0x00,0xF0,0x00,0xF0,0x00,0xF0,0x00,0xF0,0x00,0xF0,0x00,0xF0,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF3,0x00,0xF0,0x00,0xF0,0x00,0xC3,0x00,0xC3,0x00,0xC3,0x00,0xC3,0x00,0xC3,0x00,0xC3,0x00,0xFF,0x00,0xFF,0x00,0xCF,0x00,0xCF,0x00,0xCF,0x00,0xCF,0x00,0xCF,0x00,0xCF,0x00,0xC3,0x00,0xC3,0x00,0x0F,0x00,0x0F,0x00,0x0F,0x00,0x0F,0x00,0x0F,0x00,0x0F,0x00,0xFC,0x00,0xFC,0x00,0x3C,0x00,0x42,0x00,0xB9,0x00,0xA5,0x00,0xB9,0x00,0xA5,0x00,0x42,0x00,0x3C};  //N logo?
 	uint8_t gfx[MAX_NUM_TILES * 8][8];
 
-	uint8_t test[20] = {0x3c, 0, 0x18, 0, 0x18, 0, 0x18, 0, 0x18, 0, 0x18, 0, 0x18, 0, 0x18, 0,};
-	
 	/*
 	8000-87FF  tile set 1 0-127
 	8800-8fff  tile set 1 128-255          in total 384 tiles.
@@ -25,14 +23,11 @@ private:
 	9000-97FF  tile set 0  0-127
 	9800-9BFF  tile map 0
 	9C00-9FFF  tile map 1
-
-
-
 	*/
 
-    	SDL_Window* window = NULL;
-	    SDL_Texture* texture = NULL;
-    	SDL_Renderer* renderer = NULL;
+    SDL_Window* window = NULL;
+	SDL_Texture* texture = NULL;
+    SDL_Renderer* renderer = NULL;
 	
 	/*Flag register (F)bits:
 
@@ -46,13 +41,13 @@ private:
 		0 - Not used, always zero
 	*/
 
+	uint8_t memory[0xffff];
+
 	uint16_t pc;
 	uint16_t sp;
 	uint32_t rhl;
 
 	bool ie;  // interrupt enable flag
-
-
 
 	uint16_t ra, rb, rc, rd, re; //registers
 	uint16_t sr;
@@ -85,23 +80,14 @@ private:
 			==
 		C000 DE00
 
-
 		*/
 
 	uint8_t opcode;
 	uint16_t operand[2];
 
 	uint16_t bbaa() {
-
 		return (operand[1] << 8) + operand[0];
-
 	}
-
-	/*uint16_t aabb()  {    
-
-		return (operand[1] << 8) + operand[0];
-
-	}*/  
 
 	bool r_sr(char flg) {  //read status register
 		switch (flg) {
@@ -251,8 +237,7 @@ private:
 	uint16_t r_rde() {
 		uint16_t temp = 0;
 		temp += re;
-		temp += (rd << 8);   //TODO test double register action
-
+		temp += (rd << 8);   
 		return temp;
 	}
 
@@ -320,23 +305,29 @@ private:
 				memory[address] = 0;
 				break;
 
+			case 0xff80: //tetris patch?
+				break;
+
 			default:{
 				memory[address] = data;
 				break;
 			}
 		};
+		return;
+	}
+
+	void dump_memory(){
+		ofstream outfile ("memory.dump");
+		for (int i = 0; i < 0xffff; i++){
+		outfile << memory[i];
+		}
+		outfile.close();
 
 		return;
 	}
 
 
-
-
 public:
-
-	uint8_t memory[0xffff]; //memory public, needs to be accessed by gpu
-
-
 
 	bool load_binary(string path) { //load rom starting at 0x200
 
@@ -373,16 +364,6 @@ public:
 		return 1;
 	}
 
-	void dump_memory(){
-		ofstream outfile ("memory.dump");
-		for (int i = 0; i < 0xffff; i++){
-		outfile << memory[i];
-		}
-		outfile.close();
-
-		return;
-	}
-
 	void initialize() {
 
 		for (int i = 0; i < 0x8100; i++)
@@ -392,7 +373,6 @@ public:
 			memory[i] = vram_init[i - 0x8000];
 
 		
-
 		soft_reset();
 
 		return;
@@ -417,33 +397,27 @@ public:
 		sp = 0xfffe;  //not dfff?
 		pc = 0x100;
 
-		memory [0xff44] = 0x94;  //tetris patch?
 		return;
 
 	}
 
 
 long lel = 0;   //debug purposes
+bool found = false;
 
 void cycle() {  //fetch, execute
 
-
-		if (pc == 0x282a){  //graphics loaded
-			draw_tileset();
-			cout<<"Graphics loaded!";
-			
+		if (pc == 0x7ff3 && !found){  //problem: missing vblank int
+			cout<<"A";
+			found =!found;
 		}
 
-
-		if ((lel % 100000) == 0){
-		
-		draw_tileset();
-		
+		if ((lel % 10000) == 0){
+		draw_tileset();		
 		}
 
-		if (lel % 1000 == 0)
-			cout << (int)pc<< "            " << lel << endl;
-
+		if (lel % 100 == 0)
+			cout << pc << " ,";
 		 
 
 		lel ++;
@@ -451,11 +425,11 @@ void cycle() {  //fetch, execute
 		if (lel % 4 == 0)  //temporary LY bypass
 			memory[0xff44] = memory[0xff44] + 1;
 
-		opcode = memory[pc];
-		operand[0] = memory[pc + 1];
-		operand[1] = memory[pc + 2];
+	opcode = memory[pc];
+	operand[0] = memory[pc + 1];
+	operand[1] = memory[pc + 2];
 
-		switch (opcode) {
+	switch (opcode) {
 
 		case 0x00:   //NOP
 			pc += 1;
@@ -571,22 +545,42 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			break;
 
+		case 0x18: //JMP signed relative
+			if (operand[0] >= 0x80) {
+					operand[0] = (operand[0]^0xff) + 1 ;
+					pc -= operand[0];
+				}
+				else
+				{
+					pc += operand[0];
+				}
+					
+				pc += 2;
+			break;
+
 		case 0x19:  //add de to hl
 			rhl += r_rde();
 			check_carry32(rhl);
 			set_subtract(0);
 			check_hcarry(rhl, r_rde());
+			check_zero(rhl);
 			pc += 1;
 			break;
 
-		case 0x1a:  //AND rc ra * 010
-			ra = ra & rc;
-			check_zero(ra);
-			set_hcarry(1);
-			set_subtract(0);
-			set_carry(0);
+		case 0x1a:  //LD ra (de)
+			ra = memory[r_rde()];
 			pc += 1;
 			break;
+
+		case 0x1c:{ //INC re
+			uint8_t temp = re;
+			re++;
+			check_zero(re);
+			check_hcarry(re, temp);
+			set_subtract(0);
+			pc += 1;
+			break;
+		}
 
 		case 0x1e:   //LD E $xx 
 			re = operand[0];
@@ -626,9 +620,30 @@ void cycle() {  //fetch, execute
 			pc += 3;
 			break;
 
+		case 0x22:  // save ra at (hl)+
+			wr_mem(rhl, ra);
+			rhl ++;
+			pc += 1;
+			break;
+
 		case 0x23:  //increment hl
 			rhl++;
 			pc += 1;
+			break;
+
+		case 0x28: // JZ relative signed
+			if (read_zero() != 0) {
+				if (operand[0] >= 0x80) {
+					operand[0] = (operand[0]^0xff) + 1 ;
+					pc -= operand[0];
+				}
+				else
+				{
+					pc += operand[0];
+				}
+			}
+			
+				pc += 2;
 			break;
 
 		case 0x2a:   //LD (hl)+, a
@@ -636,6 +651,18 @@ void cycle() {  //fetch, execute
 			rhl += 0x1;
 			pc += 1;
 			break;
+
+		case 0x2c:{ // INC rl
+			uint8_t temp = rhl;
+			temp++;
+			pc += 1;
+			check_zero(temp);
+			check_hcarry(temp - 1, temp);
+			set_subtract(0);
+			rhl = rhl & 0xff00;
+			rhl += temp;
+			break;
+		}
 
 		case 0x2f : //NOT ra
 		ra = 0xff - ra;
@@ -654,6 +681,16 @@ void cycle() {  //fetch, execute
 			rhl--;
 			pc += 1;
 			break;
+
+		case 0x35:{ // DC (rhl)
+			uint16_t temp = memory[rhl];
+			memory[rhl] -= 1;
+			set_subtract(1);
+			check_zero(temp);
+			check_hcarry(temp, temp - 1);
+			pc += 1;
+			break;
+		}
 
 		case 0x36:  //LD (HL),  operand0
 			wr_mem(rhl, operand[0]);
@@ -705,6 +742,17 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
+		case 0x7c : // ra = rh
+			ra = rhl >> 8;
+			pc += 1;
+			break;
+
+		case 0x7e:{ //ra = (hl)
+			ra = memory[rhl];
+			pc += 1;
+			break;
+		}
+
 		case 0x82:  //add d to a
 			ra += rd;
 			check_carry(ra);
@@ -755,6 +803,15 @@ void cycle() {  //fetch, execute
 			pc +=1;
 			break;
 
+		case 0xa7:  //AND a with a
+			ra = ra & ra;
+			set_hcarry(1);
+			check_zero(ra);
+			set_subtract(0);
+			set_carry(0);
+			pc += 1;
+			break;
+
 		case 0xa9: //xor rc with ra
 			ra = rc ^ ra;
 			check_zero(ra);
@@ -765,8 +822,11 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0xaf:  //XOR A A
-			ra = 0x0000;
+			ra = 0;
 			set_zero(1);
+			set_hcarry(0);
+			set_carry(0);
+			set_subtract(0);
 			pc += 1;
 			break;
 
@@ -781,10 +841,15 @@ void cycle() {  //fetch, execute
 
 		case 0xb1: //  OR C with A
 			ra = rc | ra;
-			set_hcarry(1);
+			set_hcarry(0);
 			set_subtract(0);
 			set_carry(0);
 			check_zero(ra);
+			pc += 1;
+			break;
+
+		case 0xc1: //POP rbc
+			w_rbc(pop16());
 			pc += 1;
 			break;
 
@@ -797,8 +862,22 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
+		case 0xc8: //RTS if Z
+			if (read_zero() == 1)
+				pc = pop16();
+			else
+				pc += 1;
+			break;	
+			
 		case 0xc9: // RTS
 			pc = pop16();
+			break;
+
+		case 0xca: //JZ absolute
+			if (read_zero() == 1)
+				pc = bbaa();
+			else
+				pc += 3;
 			break;
 
 		case 0xcb: {  //2 bytes instructions
@@ -807,13 +886,15 @@ void cycle() {  //fetch, execute
 				case 0x37:{  //swap half bytes of ra
 					uint8_t temp = (ra & 0xf);
 					ra = (ra >> 4) + (temp << 4);
+					check_zero(ra);
+					set_subtract(0);
+					set_hcarry(0);
+					set_carry(0);
 					break;
 				}
 
-				case 0x87:  //test bit 6 of ra 
-					set_hcarry(1);
-					set_subtract(0);
-					check_zero((ra >> 5) & 0x1);   
+				case 0x87:  // RES et bit 0 of ra
+					  ra = ra & 0xfe;
 					break;
 
 
@@ -836,6 +917,11 @@ void cycle() {  //fetch, execute
 		case 0xcf: //call subroutine at 08h
 			push16(pc);
 			pc = 0x08;
+			break;
+
+		case 0xd1: // POP rde
+			w_rde(pop16());
+			pc += 1;
 			break;
 
 		case 0xd5: // push de
@@ -898,6 +984,11 @@ void cycle() {  //fetch, execute
 			break;
 		}
 
+		case 0xf1: //POP raf
+			w_raf(pop16());
+			pc += 1;
+			break;
+
 		case 0xf3: {
 			//TODO implement interrupts, then disable them.
 			ie = 0;
@@ -910,6 +1001,11 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 		}
+
+		case 0xfa: //ld ra from bbaa()
+			ra = memory[bbaa()];
+			pc += 3;
+			break;
 
 		case 0xfb:  //interrupt enable
 		ie = 1;
