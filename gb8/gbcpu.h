@@ -459,23 +459,22 @@ void cycle() {  //fetch, execute
 			rb = rb & 0xff;
 			check_zero(rb);
 			pc += 1;
-			break; }
+			break; 
+			}
 
 		case 0x06: { //06 xx LD B,$xx
 			rb = operand[0];
 			check_zero(rb);
 			pc += 2;
-			break; }
+			break; 
+		}
 
 		case 0x0b: {//DEC rbc
 			uint32_t tempo = r_rbc();  //TODO more efficient way?
 			w_rbc((tempo - 0x1)); 
-			/*set_subtract(1);
-			if (r_rbc() == 0)
-				set_zero(1);
-			check_hcarry32(r_rbc(), tempo);  no flags on 16 bit inc/dec  */
 			pc += 1;
-			break; }
+			break; 
+		}
 
 		case 0xc:{  //increment c
 			uint8_t temp = rc;
@@ -492,7 +491,6 @@ void cycle() {  //fetch, execute
 			rc--;
 			set_subtract(1);  //TODO flag set/check on 8bit increments/decrements
 			check_zero(rc);
-			//check_carry(rc);
 			check_hcarry(rc, temp);
 			pc += 1;
 			break;
@@ -550,9 +548,8 @@ void cycle() {  //fetch, execute
 					operand[0] = (operand[0]^0xff) + 1 ;
 					pc -= operand[0];
 				}
-				else
-				{
-					pc += operand[0];
+				else {
+				pc += operand[0];
 				}
 					
 				pc += 2;
@@ -605,8 +602,7 @@ void cycle() {  //fetch, execute
 					operand[0] = (operand[0]^0xff) + 1 ;
 					pc -= operand[0];
 				}
-				else
-				{
+				else {
 					pc += operand[0];
 				}
 			}
@@ -637,8 +633,7 @@ void cycle() {  //fetch, execute
 					operand[0] = (operand[0]^0xff) + 1 ;
 					pc -= operand[0];
 				}
-				else
-				{
+				else {
 					pc += operand[0];
 				}
 			}
@@ -665,11 +660,11 @@ void cycle() {  //fetch, execute
 		}
 
 		case 0x2f : //NOT ra
-		ra = 0xff - ra;
-		set_subtract(1);
-		set_hcarry(1);
-		pc += 1;
-		break;
+			ra = 0xff - ra;
+			set_subtract(1);
+			set_hcarry(1);
+			pc += 1;
+			break;
 
 		case 0x31:  // LD aabb in SP register
 			sp = bbaa();
@@ -727,7 +722,7 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
-		case 0x78:  //copy rb to ra
+		case 0x78:  //copy b to a
 			ra = rb;
 			pc += 1;
 			break;
@@ -737,7 +732,7 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
-		case 0x79: // ra = rc
+		case 0x79: // a = c
 			ra = rc;
 			pc += 1;
 			break;
@@ -900,7 +895,7 @@ void cycle() {  //fetch, execute
 
 
 				default:{
-					cout << "Unknown CB ";
+					cout << "Unknown CB op ";
 				
 				}
 			} 
@@ -931,7 +926,7 @@ void cycle() {  //fetch, execute
 
 		case 0xdf:   // call subroutine at 0018h
 			push16(pc);
-			pc = 0x0180;
+			pc = 0x0018;
 			break;
 
 		case 0xe0:  //save ra at FF00h + operand0
@@ -963,7 +958,7 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			break;
 
-		case 0xe9:  //jmp (hl) ?? or hl?
+		case 0xe9:  //jmp  hl
 			pc = rhl;
 			break;
 
@@ -1064,7 +1059,7 @@ void cycle() {  //fetch, execute
 				std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
 				return;
 			}
-			window = SDL_CreateWindow("GBoi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, SDL_WINDOW_SHOWN);
+			window = SDL_CreateWindow("GBoi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 			if (window == NULL) {
 				std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
 				return;
@@ -1111,21 +1106,15 @@ void cycle() {  //fetch, execute
 																
 			xpos *= 8;
 			ypos *= 8;
-			xindex *= 8;
-			
+			xindex *= 8;			
 
-			for (int y = ypos; y < ypos + 8; y++) {  
-				
+			for (int y = ypos; y < ypos + 8; y++) {  				
 				for (int x = xpos; x < xpos + 8; x++) {
-				
 					SDL_Rect fillRect = { x, y, 1, 1};
 					SDL_SetRenderDrawColor(renderer, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, gfx[xindex +(x - xpos)][(y - ypos)] * 0x55, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, 0xff);
-					SDL_RenderFillRect(renderer, &fillRect);
-					
+					SDL_RenderFillRect(renderer, &fillRect);	
 				}
 			}  
-
-
 	}
 
 void update_tileram(){
