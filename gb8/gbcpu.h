@@ -52,6 +52,8 @@ private:
 	uint16_t ra, rb, rc, rd, re; //registers
 	uint16_t sr;
 
+	uint8_t IME, IF;  //Interrupt Master Enable, Interrupt Flags
+
 	/*  Interrupt Enable Register
 		-------------------------- - FFFF
 		Internal RAM
@@ -327,6 +329,41 @@ private:
 	}
 
 
+/* 0	Vblank   0x40
+   1	LCD stat 0x48
+   2	Timer 	 0x50
+   3	Serial	 0x58
+   4	Joypad   0x60 */
+
+void interrupt_routine(){
+	IME = memory[0xffff];
+	IF = memory[0xff0f];
+
+	if ((IME & 0x1) && (IF & 0x1)){  //Vblank
+		push16(pc);
+		pc = 0x40;
+	}
+	else if((IME & 0x2) && (IF & 0x2)){  //LCD
+			push16(pc);
+			pc = 0x48;
+	}
+		else if ((IME & 0x4) && (IF & 0x4)){   //Timer
+				push16(pc);
+				pc = 0x50;
+		}
+			else if ((IME & 0x8) && (IF & 0x8)){  //Serial
+					push16(pc);
+					pc = 0x58;
+			}
+				else if ((IME & 0x10) && (IF & 0x10)){  //Joypad
+						push16(pc);
+						pc = 0x60;
+				}
+
+	memory[0xff0f] = 0;
+	return;
+}
+
 public:
 
 	bool load_binary(string path) { //load rom starting at 0x200
@@ -413,7 +450,9 @@ void cycle() {  //fetch, execute
 		}
 
 		if ((lel % 10000) == 0){
-		draw_tileset();		
+		draw_tileset();	
+		//vblank interrupt	
+		memory [0xff0f] = memory[0xff0f] | 0x1;
 		}
 
 		if (lel % 100 == 0)
@@ -424,6 +463,11 @@ void cycle() {  //fetch, execute
 
 		if (lel % 4 == 0)  //temporary LY bypass
 			memory[0xff44] = memory[0xff44] + 1;
+
+	//interrupt handling:
+	interrupt_routine();
+
+
 
 	opcode = memory[pc];
 	operand[0] = memory[pc + 1];
@@ -658,7 +702,6 @@ void cycle() {  //fetch, execute
 			rhl += temp;
 			break;
 		}
-
 		case 0x2f : //NOT ra
 			ra = 0xff - ra;
 			set_subtract(1);
@@ -686,7 +729,6 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 		}
-
 		case 0x36:  //LD (HL),  operand0
 			wr_mem(rhl, operand[0]);
 			pc += 2;
@@ -747,7 +789,6 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 		}
-
 		case 0x82:  //add d to a
 			ra += rd;
 			check_carry(ra);
@@ -767,7 +808,6 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 		}
-
 		case 0x89: {  //adc A c,  add c and carry flag to A
 			ra += rc + (r_sr('c'));
 			check_carry(ra);
@@ -777,7 +817,6 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 		}
-
 		case 0x8f: { //add a and fc to a
 			uint16_t temp = r_sr('c') + ra;
 			ra = (ra * 2) + r_sr('c');
@@ -788,7 +827,6 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 		}
-
 		case 0xa1:  //AND rc with ra
 			ra = rc & ra;
 			set_hcarry(1);
@@ -834,6 +872,7 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
+		
 		case 0xb1: //  OR C with A
 			ra = rc | ra;
 			set_hcarry(0);
@@ -843,6 +882,13 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			break;
 
+		case 0xc0:  //RTS if NZ
+			if (read_zero() == 0)
+				pc = pop16();
+			else
+				pc += 1;
+			break;
+		
 		case 0xc1: //POP rbc
 			w_rbc(pop16());
 			pc += 1;
@@ -903,7 +949,6 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			break;
 		}
-
 		case 0xcd: //call subroutine at bbaa
 			push16(pc + 0x3);
 			pc = bbaa();
@@ -967,7 +1012,6 @@ void cycle() {  //fetch, execute
 			pc += 3;
 			break;
 		}
-
 		case 0xef:  //call sub at 28h
 			push16(pc + 1);
 			pc = 0x28;
@@ -978,7 +1022,6 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			break;
 		}
-
 		case 0xf1: //POP raf
 			w_raf(pop16());
 			pc += 1;
@@ -987,25 +1030,25 @@ void cycle() {  //fetch, execute
 		case 0xf3: {
 			//TODO implement interrupts, then disable them.
 			ie = 0;
+			memory[0xffff] = 0;
 			pc += 1;
 			break;
 		} 
-
 		case 0xf5: {// push af
 			push16(r_raf());
 			pc += 1;
 			break;
 		}
-
 		case 0xfa: //ld ra from bbaa()
 			ra = memory[bbaa()];
 			pc += 3;
 			break;
 
 		case 0xfb:  //interrupt enable
-		ie = 1;
-		pc += 1;
-		break;
+			ie = 1;
+			memory[0xffff] = 1;
+			pc += 1;
+			break;
 
 		case 0xfe: {  // CP operand0 with a : Z if equal, N set, C and H as if it was ra- operand0
 			uint16_t temp = 0;
@@ -1019,12 +1062,10 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			break;
 		}
-
 		case 0xff: {  // RST $38
 			pc = 0x38;
 			break;
 		}
-
 		default: {
 			cout << "unknown opcode" << (int)opcode << "   " << (int)pc ;
 			break;
