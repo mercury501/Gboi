@@ -2,7 +2,7 @@
 #include <string>
 #include <cstring>
 #include <thread>
-#include "gbcpu.h"
+#include "gbcpu.cpp"
 #include <SDL2/SDL.h>
 
 using namespace std;
