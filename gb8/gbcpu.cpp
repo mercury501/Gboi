@@ -522,13 +522,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0x01:    // LD bc bbaa
+		case 0x01:    // LD rbc bbaa()
 			w_rbc(bbaa());
 			pc += 3;
 			cycle_count += 20;
 			break;
 
-		case 0x04: {  // increment B
+		case 0x04: {  // INC rb
 			if ((rb & 0xf) == 0xf)
 				set_hcarry(1);
 			else
@@ -542,7 +542,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x05: {  // 05 DECrement B
+		case 0x05: {  // DEC rb
 			if ((rb & 0xf) == 0xf)
 				set_hcarry(0);
 			else
@@ -556,7 +556,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break; 	}
 
-		case 0x06: {  // 06 xx LD B,$xx
+		case 0x06: {  // LD rb operand0
 			rb = operand[0];
 			check_zero(rb);
 			pc += 2;
@@ -570,7 +570,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break; 	}
 
-		case 0x0c: {  // increment c
+		case 0x0c: {  // INC rc
 			if ((rc & 0xf) == 0xf)
 				set_hcarry(1);
 			else
@@ -584,7 +584,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x0d: {  // decrement C
+		case 0x0d: {  // DEC rc
 			if ((rc & 0xf) == 0xf)
 				set_hcarry(0);
 			else
@@ -598,32 +598,32 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x0e:    // 0E xx LD C,$xx
+		case 0x0e:    // LD rc operand0
 			rc = operand[0];
 			pc += 2;
 			cycle_count += 8;
 			break;
 
-		case 0x11:    // load bbaa in rde
+		case 0x11:    // LD rbe bbaa()
 			w_rde(bbaa());
 			pc += 3;
 			cycle_count += 12;
 			break;
 
-		case 0x12:    // save ra in (rde)
+		case 0x12:    // LD (rde) ra
 			wr_mem(r_rde(), ra);
 			pc += 1;
 			cycle_count += 8;
 			break;
 
-		case 0x13: {  // INCrement rde
+		case 0x13: {  // INC rde
 			uint16_t temp = r_rde();
 			w_rde(temp + 1);
 			pc += 1;
 			cycle_count += 8;
 			break;	}
 		
-		case 0x14:    // increment D
+		case 0x14:    // INC rd
 			if ((rd & 0xf) == 0xf)
 				set_hcarry(1);
 			else
@@ -637,7 +637,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	
 
-		case 0x15: {  // decrement D  
+		case 0x15: {  // DEC rd  
 			if ((rd & 0xf) == 0xf)
 				set_hcarry(0);
 			else
@@ -651,13 +651,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x16:    // load xx into D
+		case 0x16:    // LD rd operand0
 			rd = operand[0];
 			pc += 2;
 			cycle_count += 8;
 			break;
 
-		case 0x18:    // JMP signed relative
+		case 0x18:    // JR signed
 			if (operand[0] >= 0x80) {
 					operand[0] = (operand[0]^0xff) + 1 ;
 					pc -= operand[0];
@@ -670,7 +670,7 @@ void cycle() {  //fetch, execute
 				cycle_count += 16;
 			break;
 
-		case 0x19:    // add de to hl
+		case 0x19:    // ADD rhl rde
 			if ((r_rde() & 0xff) + (rhl & 0xff) > 0xff)
 				set_hcarry(1);
 			else
@@ -703,13 +703,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x1e:    // LD E $xx 
+		case 0x1e:    // LD re operand0 
 			re = operand[0];
 			pc += 2;
 			cycle_count += 8;
 			break;
 
-		case 0x1f: {  // Rotate Right A
+		case 0x1f: {  // RRA
 			bool temp = read_carry();
 			set_carry(bool((ra & 0x80) >> 8));  //TODO check this mess
 			ra = (ra * 2) + temp;
@@ -721,7 +721,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 				   
-		case 0x20: {  // 20 xx JR NZ,$xx
+		case 0x20: {  // JR NZ operand0
 			if (read_zero() == 0) {
 				if (operand[0] >= 0x80) {
 					operand[0] = (operand[0]^0xff) + 1 ;
@@ -738,26 +738,26 @@ void cycle() {  //fetch, execute
 				
 			break;	}
 
-		case 0x21:    // 21 bb aa LD HL,$aabb
+		case 0x21:    // LD rhl bbaa()
 			rhl = bbaa();
 			pc += 3;
 			cycle_count += 12;
 			break;
 
-		case 0x22:    // save ra at (hl)+
+		case 0x22:    // LD (rhl)+ ra 
 			wr_mem(rhl, ra);
 			rhl ++;
 			pc += 1;
 			cycle_count += 8;
 			break;
 
-		case 0x23:    // increment hl
+		case 0x23:    // INC rhl
 			rhl++;
 			pc += 1;
 			cycle_count += 8;
 			break;
 
-		case 0x28:    // JZ relative signed
+		case 0x28:    // JRZ signed
 			if (read_zero() != 0) {
 				if (operand[0] >= 0x80) {
 					operand[0] = (operand[0]^0xff) + 1 ;
@@ -773,7 +773,7 @@ void cycle() {  //fetch, execute
 				pc += 2;
 			break;
 
-		case 0x2a:    // LD (hl)+, a
+		case 0x2a:    // LD ra (rhl)+
 			ra = memory[rhl];
 			rhl += 0x1;
 			pc += 1;
@@ -805,20 +805,20 @@ void cycle() {  //fetch, execute
 			cycle_count += 4; //?
 			break;
 
-		case 0x31:    // LD aabb in SP register
+		case 0x31:    // LD SP bbaa()
 			sp = bbaa();
 			pc += 3;
 			cycle_count += 12;
 			break;
 
-		case 0x32:    // 32 LD (HL)-,A
+		case 0x32:    // LD (HL)- ra
 			wr_mem(rhl, ra);
 			rhl--;
 			pc += 1;
 			cycle_count += 8;
 			break;
 		
-		case 0x34:     //INC (rhl)
+		case 0x34:    // INC (rhl)
 			if ((memory[rhl] & 0xf) == 0xf)
 				set_hcarry(1);
 			else
@@ -845,13 +845,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 12;
 			break;	}
 
-		case 0x36:    // LD (HL),  operand0
+		case 0x36:    // LD (HL) operand0
 			wr_mem(rhl, operand[0]);
 			pc += 2;
 			cycle_count += 12;
 			break;
 
-		case 0x3c:    // INC ra  //? or rhl?
+		case 0x3c:    // INC ra
 			if ((ra & 0xf) == 0xf)
 				set_hcarry(1);
 			else
@@ -879,79 +879,79 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0x3e:    // ld a $xx
+		case 0x3e:    // LD ra operand0
 			ra = operand[0];
 			pc += 2;
 			cycle_count += 8;
 			break;
 
-		case 0x47:    // rb = ra
+		case 0x47:    // LD rb ra
 			rb = ra;
 			pc += 1;
 			cycle_count += 4;
 			break;
 
-		case 0x4f:    // rc = ra
+		case 0x4f:    // LD rc ra
 			rc = ra;
 			pc += 1;
 			cycle_count += 4;
 			break;
 
-		case 0x56:    // copy (hl) to d
+		case 0x56:    // LD rd (rhl)
 			rd = memory[rhl];
 			pc += 1;
 			cycle_count += 8;
 			break;
 
-		case 0x5e:    // copy value pointed at by hl in e
+		case 0x5e:    // LD re (rhl)
 			re = memory[rhl];
 			pc += 1;
 			cycle_count += 8;
 			break;
 
-		case 0x5f:    // copy a to e
+		case 0x5f:    // LD re ra
 			re = ra;
 			pc += 1;
 			cycle_count += 4;
 			break;
 
-		case 0x75: {   // copy rl to (rhl)
+		case 0x75: {  // LD (rhl) rl
 			wr_mem(rhl, rhl & 0xff);
 			pc += 1;
 			cycle_count += 8;
 			break;	}
 		
-		case 0x78:    // copy b to a
+		case 0x78:    // LD ra rb
 			ra = rb;
 			pc += 1;
 			cycle_count += 4;	
 			break;
 					
-		case 0x7a:    // copy d to a
+		case 0x7a:    // LD ra rd
 			ra = rd;
 			pc += 1;
 			cycle_count += 4;
 			break;
 
-		case 0x79:    // a = c
+		case 0x79:    // LD ra rc
 			ra = rc;
 			pc += 1;
 			cycle_count += 4;
 			break;
 
-		case 0x7c:    // ra = rh
+		case 0x7c:    // LD ra rh
 			ra = rhl >> 8;
 			pc += 1;
 			cycle_count += 4;
 			break;
 
-		case 0x7e: {  // ra = (hl)
+		case 0x7e: {  // LD ra (hl)
 			ra = memory[rhl];
 			pc += 1;
 			cycle_count += 12;
 			break;	}
 
-		case 0x82:    // add d to a
+		case 0x82:    // ADD ra rd
 			if ((ra & 0xf) + (rd & 0xf) > 0xf)
 				set_hcarry(1);
 			else
@@ -965,7 +965,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 		
-		case 0x83:    // add re to ra
+		case 0x83:    // ADD ra re
 			if ((ra & 0xf) + (re & 0xf) > 0xf)
 				set_hcarry(1);
 			else
@@ -979,7 +979,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0x87: {  // double a
+		case 0x87: {  // ADD ra ra
 			if ((ra & 0xf) + (ra & 0xf) > 0xf)
 				set_hcarry(1);
 			else
@@ -993,7 +993,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x89: {  // adc A c,  add c and carry flag to A
+		case 0x89: {  // ADC ra rc
 			if ((ra & 0xf) + ((rc + r_sr('c')) & 0xf) > 0xf)
 				set_hcarry(1);
 			else
@@ -1007,7 +1007,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x8f: {  // add a and fc to a
+		case 0x8f: {  // ADC ra ra
 			if ((ra & 0xf) + ((ra + r_sr('c')) & 0xf) > 0xf)
 				set_hcarry(1);
 			else
@@ -1021,7 +1021,7 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			cycle_count += 4;
 			break;	}
-		case 0xa1:    // AND rc with ra
+		case 0xa1:    // AND ra rc
 			ra = rc & ra;
 			set_hcarry(1);
 			set_subtract(0);
@@ -1031,7 +1031,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0xa7:    // AND a with a
+		case 0xa7:    // AND ra ra
 			ra = ra & ra;
 			set_hcarry(1);
 			check_zero(ra);
@@ -1041,7 +1041,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0xa9:    // xor rc with ra
+		case 0xa9:    // XOR ra rc
 			ra = rc ^ ra;
 			check_zero(ra);
 			set_subtract(0);
@@ -1051,7 +1051,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0xaf:    // XOR A A
+		case 0xaf:    // XOR ra ra
 			ra = 0;
 			set_zero(1);
 			set_hcarry(0);
@@ -1061,7 +1061,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0xb0:    // or rb with ra  
+		case 0xb0:    // OR ra rb  
 			ra = ra | rb;
 			check_zero(ra);
 			set_subtract(0);
@@ -1071,7 +1071,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 		
-		case 0xb1:    //  OR C with A
+		case 0xb1:    // OR ra rc
 			ra = rc | ra;
 			set_hcarry(0);
 			set_subtract(0);
@@ -1081,7 +1081,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0xb7:    // OR A with A
+		case 0xb7:    // OR ra ra
 			ra = ra | ra;
 			check_zero(ra);
 			set_carry(0);
@@ -1091,7 +1091,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0xc0:    // RTS if NZ
+		case 0xc0:    // RTS NZ
 			if (read_zero() == 0){
 				pc = pop16();
 				cycle_count += 20;
@@ -1108,18 +1108,18 @@ void cycle() {  //fetch, execute
 			cycle_count += 12;
 			break;
 
-		case 0xc3:    // JMP bb aa
+		case 0xc3:    // JMP bbaa()
 			pc = bbaa();
 			cycle_count += 16;
 			break;
 
-		case 0xc5:    // push bc
+		case 0xc5:    // PUSH rbc
 			push16(r_rbc());
 			pc += 1;
 			cycle_count += 16;
 			break;
 
-		case 0xc8:    // RTS if Z
+		case 0xc8:    // RTS Z
 			if (read_zero() == 1){
 				pc = pop16();
 				cycle_count += 20;
@@ -1149,7 +1149,7 @@ void cycle() {  //fetch, execute
 		case 0xcb: {  // 2 bytes instructions
 			switch (operand[0]){
 				
-				case 0x37:{  //swap half bytes of ra
+				case 0x37:{  //SWAP ra
 					uint8_t temp = (ra & 0xf);
 					ra = (ra >> 4) + (temp << 4);
 					check_zero(ra);
@@ -1158,7 +1158,7 @@ void cycle() {  //fetch, execute
 					set_carry(0);
 					break;	}
 
-				case 0x87:  // RES et bit 0 of ra
+				case 0x87:  // RES 0 ra
 					  ra = ra & 0xfe;
 					break;
 
@@ -1173,13 +1173,13 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			break;
 		}
-		case 0xcd:    // call subroutine at bbaa
+		case 0xcd:    // CALL bbaa()
 			push16(pc + 0x3);
 			pc = bbaa();
 			cycle_count += 24;
 			break;
 
-		case 0xcf:    // call subroutine at 08h
+		case 0xcf:    // CALL 08h
 			push16(pc);
 			pc = 0x08;
 			cycle_count += 24;  //?
@@ -1191,32 +1191,32 @@ void cycle() {  //fetch, execute
 			cycle_count += 12;
 			break;
 
-		case 0xd5:    // push de
+		case 0xd5:    // PUSH rde
 			push16(r_rde());
 			pc += 1;
 			cycle_count += 16;
 			break;
 
-		case 0xd9:    // rts and enable interrupts
+		case 0xd9:    // RETI
 			pc = pop16();
 			ie = 1;
 			cycle_count += 16;
 			break;
 
-		case 0xdf:    // call subroutine at 0018h
+		case 0xdf:    // CALL 0018h
 			push16(pc);
 			pc = 0x0018;
 			cycle_count += 24; // ?
 			break;
 
-		case 0xe0:    // save ra at FF00h + operand0
+		case 0xe0:    // LD (ff00h + operand0) ra
 			wr_mem((0xff00 + operand[0]), ra);
 			pc +=2;
 			cycle_count += 8;
 			break;
 
 
-		case 0xe1:    // pop into hl
+		case 0xe1:    // POP rhl
 			rhl = pop16();
 			check_carry32(rhl);
 			//TODO halfcarry check, other operand ?
@@ -1224,78 +1224,78 @@ void cycle() {  //fetch, execute
 			cycle_count += 12;
 			break;
 
-		case 0xe2:    // ld a at ff00h + rc
+		case 0xe2:    // LD (ff00h + rc) ra
 				wr_mem((0xff00 + rc), ra);
 				pc += 1;
 				cycle_count += 8;
 			break;
 
-		case 0xe5:    // push hl
+		case 0xe5:    // PUSH rhl
 			push16(rhl);
 			pc += 1;
 			cycle_count += 16;
 			break;
 
-		case 0xe6:    // AND operand 0 , ra
+		case 0xe6:    // AND ra operand0
 			ra = ra & operand[0];
 			set_hcarry(1);
 			pc += 2;
 			cycle_count += 8;
 			break;
 
-		case 0xe9:    // jmp  hl
+		case 0xe9:    // JMP rhl
 			pc = rhl;
 			cycle_count += 16;
 			break;
 
-		case 0xea: {  // ld (nn),rA
+		case 0xea: {  // LD (operand0) ra
 			wr_mem(bbaa(), ra);
 			pc += 3;
 			cycle_count += 16;
 			break;	}
-		case 0xef:    // call sub at 28h
+		case 0xef:    // CALL 28h
 			push16(pc + 1);
 			pc = 0x28;
 			cycle_count += 24; //?
 			break;
 
-		case 0xf0: {  // ld ra from (ff00h + xx)
+		case 0xf0: {  // LD ra (ff00h + operand0)
 			ra = memory[(0xff00 + operand[0])];
 			pc += 2;
 			cycle_count += 8;
 			break;	}
-		case 0xf1:    // pop raf
+		case 0xf1:    // POP raf
 			w_raf(pop16());
 			pc += 1;
 			cycle_count += 12;
 			break;
 
-		case 0xf3: {  // disable interrupts
+		case 0xf3: {  // DI
 			//TODO implement interrupts, then disable them.
 			ie = 0;
 			pc += 1;
 			cycle_count += 4;
 			break;	} 
 
-		case 0xf5: {  // push af
+		case 0xf5: {  // PUSH raf
 			push16(r_raf());
 			pc += 1;
 			cycle_count += 16;
 			break;	}
 
-		case 0xfa:    // ld ra from bbaa()
+		case 0xfa:    // LD ra bbaa()
 			ra = memory[bbaa()];
 			pc += 3;
 			cycle_count += 16;
 			break;
 
-		case 0xfb:    // interrupt enable
+		case 0xfb:    // IE
 			ie = 1;
 			pc += 1;
 			cycle_count += 4;
 			break;
 
-		case 0xfe: {  // cmp operand0 with ra : Z if equal, N set, C and H as if it was ra- operand0
+		case 0xfe: {  // CMP ra operand0 
 			uint16_t temp = ra - operand[0];
 			if((operand[0] & 0x0f) > (ra & 0x0f)) 
 				set_hcarry(1);
@@ -1310,7 +1310,7 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			//?
 			break;	}
-		case 0xff: {  // rst $38
+		case 0xff: {  // RST $38
 			pc = 0x38;
 			cycle_count += 24;//?
 			break;	}
