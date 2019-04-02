@@ -1,5 +1,5 @@
 #OBJS specifies which files to compile as part of the project
-OBJS = gb8.cpp gbcpu.h gbcpu.cpp gbtiming.cpp
+OBJS = gb8.cpp gbcpu.h gbcpu.cpp 
 
 #CC specifies which compiler we're using
 CC = g++

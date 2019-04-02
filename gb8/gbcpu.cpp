@@ -80,7 +80,17 @@ private:
 	uint8_t opcode;
 	uint16_t operand[2];
 
-	int cycle_count ;
+	int cycle_count;
+	uint32_t frame_start_time;
+
+
+ void wait_next_frame(uint32_t frame_end){  //should already account for instruction time
+            while (SDL_GetTicks() < frame_end)
+				SDL_Delay(5);
+
+        return;
+    }
+
 
 	uint16_t bbaa() {
 		return (operand[1] << 8) + operand[0];
@@ -429,6 +439,7 @@ public:
 		sp = 0xfffe;  //not dfff?
 		pc = 0x100;
 
+		frame_start_time = SDL_GetTicks();
 		return;
 
 	}
@@ -439,19 +450,14 @@ bool found = false;
 
 void cycle() {  //fetch, execute
 
-		if (pc == 0x7ff3 && !found){  //problem: missing vblank int
+	if ((lel % 30000) == 0)
+		update_tileram();
+		if (pc == 0x7ff3 && !found){  
 			cout<<"A";
 			found =!found;
 		}
-
-		if ((lel % 10000) == 0){
-		draw_tileset();	
-		//vblank interrupt	
-		memory [0xff0f] = memory[0xff0f] | 0x1;
-		}
-
 		
-		cout << pc << " ,";
+		//TODO find out why the 38h trap triggers
 		 
 
 		lel ++;
@@ -462,6 +468,17 @@ void cycle() {  //fetch, execute
 	//interrupt handling:
 	interrupt_routine();
 
+	if (cycle_count > CYCLES_PER_SECOND){
+		cycle_count = 0;
+		wait_next_frame(frame_start_time + (1000 / 60)); //60 frames every 1000 ms
+		frame_start_time = SDL_GetTicks();
+
+		//draw frame
+		draw_tileset();	//TEMP
+		//vblank interrupt	
+		memory [0xff0f] = memory[0xff0f] | 0x1;
+
+	}
 
 
 	opcode = memory[pc];
@@ -470,12 +487,12 @@ void cycle() {  //fetch, execute
 
 	switch (opcode) {
 
-		case 0x00:    //NOP
+		case 0x00:    // NOP
 			pc += 1;
 			cycle_count += 4;
 			break;
 
-		case 0x01:    //LD bc bbaa
+		case 0x01:    // LD bc bbaa
 			w_rbc(bbaa());
 			pc += 3;
 			cycle_count += 20;
@@ -491,7 +508,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x05: {  //05 DECrement B
+		case 0x05: {  // 05 DECrement B
 			uint16_t temp = rb;
 			rb--;
 			set_subtract(1);
@@ -503,21 +520,21 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break; 	}
 
-		case 0x06: {  //06 xx LD B,$xx
+		case 0x06: {  // 06 xx LD B,$xx
 			rb = operand[0];
 			check_zero(rb);
 			pc += 2;
 			cycle_count += 8;
 			break; 	}
 
-		case 0x0b: {  //DEC rbc
+		case 0x0b: {  // DEC rbc
 			uint32_t tempo = r_rbc();  //TODO more efficient way?
 			w_rbc((tempo - 0x1)); 
 			pc += 1;
 			cycle_count += 4;
 			break; 	}
 
-		case 0x0c: {  //increment c
+		case 0x0c: {  // increment c
 			uint8_t temp = rc;
 			rc++;
 			set_subtract(0);
@@ -527,7 +544,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x0d: {  //decrement C
+		case 0x0d: {  // decrement C
 			uint16_t temp = rc;
 			rc--;
 			set_subtract(1);  //TODO flag set/check on 8bit increments/decrements
@@ -537,13 +554,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x0e:    //0E xx LD C,$xx
+		case 0x0e:    // 0E xx LD C,$xx
 			rc = operand[0];
 			pc += 2;
 			cycle_count += 8;
 			break;
 
-		case 0x11:    //load bbaa in rde
+		case 0x11:    // load bbaa in rde
 			w_rde(bbaa());
 			pc += 3;
 			cycle_count += 12;
@@ -555,14 +572,14 @@ void cycle() {  //fetch, execute
 			cycle_count += 8;
 			break;
 
-		case 0x13: {  //INCrement rde
+		case 0x13: {  // INCrement rde
 			uint16_t temp = r_rde();
 			w_rde(temp + 1);
 			pc += 1;
 			cycle_count += 8;
 			break;	}
 		
-		case 0x14: {  //increment D
+		case 0x14: {  // increment D
 			uint8_t temp = rd;
 			rd++;
 			pc += 1;
@@ -572,7 +589,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x15: {  //decrement D  
+		case 0x15: {  // decrement D  
 			uint8_t temp = rd;
 			rd--;
 			pc += 1;
@@ -582,13 +599,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x16:    //load xx into D
+		case 0x16:    // load xx into D
 			rd = operand[0];
 			pc += 2;
 			cycle_count += 8;
 			break;
 
-		case 0x18:    //JMP signed relative
+		case 0x18:    // JMP signed relative
 			if (operand[0] >= 0x80) {
 					operand[0] = (operand[0]^0xff) + 1 ;
 					pc -= operand[0];
@@ -601,7 +618,7 @@ void cycle() {  //fetch, execute
 				cycle_count += 16;
 			break;
 
-		case 0x19:    //add de to hl
+		case 0x19:    // add de to hl
 			rhl += r_rde();
 			check_carry32(rhl);
 			set_subtract(0);
@@ -611,13 +628,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 8;
 			break;
 
-		case 0x1a:    //LD ra (de)
+		case 0x1a:    // LD ra (de)
 			ra = memory[r_rde()];
 			pc += 1;
 			cycle_count += 8;
 			break;
 
-		case 0x1c: {  //INC re
+		case 0x1c: {  // INC re
 			uint8_t temp = re;
 			re++;
 			check_zero(re);
@@ -627,13 +644,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x1e:    //LD E $xx 
+		case 0x1e:    // LD E $xx 
 			re = operand[0];
 			pc += 2;
 			cycle_count += 8;
 			break;
 
-		case 0x1f: {  //Rotate Right A
+		case 0x1f: {  // Rotate Right A
 			bool temp = read_carry();
 			set_carry(bool((ra & 0x80) >> 8));  //TODO check this mess
 			ra = (ra * 2) + temp;
@@ -645,7 +662,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 				   
-		case 0x20: {  //20 xx JR NZ,$xx
+		case 0x20: {  // 20 xx JR NZ,$xx
 			if (read_zero() == 0) {
 				if (operand[0] >= 0x80) {
 					operand[0] = (operand[0]^0xff) + 1 ;
@@ -662,7 +679,7 @@ void cycle() {  //fetch, execute
 				
 			break;	}
 
-		case 0x21:    //21 bb aa LD HL,$aabb
+		case 0x21:    // 21 bb aa LD HL,$aabb
 			rhl = bbaa();
 			pc += 3;
 			cycle_count += 12;
@@ -675,7 +692,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 8;
 			break;
 
-		case 0x23:    //increment hl
+		case 0x23:    // increment hl
 			rhl++;
 			pc += 1;
 			cycle_count += 8;
@@ -697,7 +714,7 @@ void cycle() {  //fetch, execute
 				pc += 2;
 			break;
 
-		case 0x2a:    //LD (hl)+, a
+		case 0x2a:    // LD (hl)+, a
 			ra = memory[rhl];
 			rhl += 0x1;
 			pc += 1;
@@ -716,7 +733,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x2f:    //NOT ra
+		case 0x2f:    // NOT ra
 			ra = 0xff - ra;
 			set_subtract(1);
 			set_hcarry(1);
@@ -730,7 +747,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 12;
 			break;
 
-		case 0x32:    //32 LD (HL)-,A
+		case 0x32:    // 32 LD (HL)-,A
 			wr_mem(rhl, ra);
 			rhl--;
 			pc += 1;
@@ -747,13 +764,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 12;
 			break;	}
 
-		case 0x36:    //LD (HL),  operand0
+		case 0x36:    // LD (HL),  operand0
 			wr_mem(rhl, operand[0]);
 			pc += 2;
 			cycle_count += 12;
 			break;
 
-		case 0x3e:    //ld a $xx
+		case 0x3e:    // ld a $xx
 			ra = operand[0];
 			pc += 2;
 			cycle_count += 8;
@@ -771,31 +788,31 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0x56:    //copy (hl) to d
+		case 0x56:    // copy (hl) to d
 			rd = memory[rhl];
 			pc += 1;
 			cycle_count += 8;
 			break;
 
-		case 0x5e:    //copy value pointed at by hl in e
+		case 0x5e:    // copy value pointed at by hl in e
 			re = memory[rhl];
 			pc += 1;
 			cycle_count += 8;
 			break;
 
-		case 0x5f:    //copy a to e
+		case 0x5f:    // copy a to e
 			re = ra;
 			pc += 1;
 			cycle_count += 4;
 			break;
 
-		case 0x78:    //copy b to a
+		case 0x78:    // copy b to a
 			ra = rb;
 			pc += 1;
 			cycle_count += 4;	
 			break;
 					
-		case 0x7a:    //copy d to a
+		case 0x7a:    // copy d to a
 			ra = rd;
 			pc += 1;
 			cycle_count += 4;
@@ -813,13 +830,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0x7e: {  //ra = (hl)
+		case 0x7e: {  // ra = (hl)
 			ra = memory[rhl];
 			pc += 1;
 			cycle_count += 12;
 			break;	}
 
-		case 0x82:    //add d to a
+		case 0x82:    // add d to a
 			ra += rd;
 			check_carry(ra);
 			check_zero(ra);
@@ -829,7 +846,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0x87: {  //double a
+		case 0x87: {  // double a
 			uint16_t temp = ra;
 			ra += ra;
 			check_carry(ra);
@@ -840,7 +857,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x89: {  //adc A c,  add c and carry flag to A
+		case 0x89: {  // adc A c,  add c and carry flag to A
 			ra += rc + (r_sr('c'));
 			check_carry(ra);
 			check_zero(ra);
@@ -849,7 +866,7 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			cycle_count += 4;
 			break;	}
-		case 0x8f: {  //add a and fc to a
+		case 0x8f: {  // add a and fc to a
 			uint16_t temp = r_sr('c') + ra;
 			ra = (ra * 2) + r_sr('c');
 			check_carry(ra);
@@ -859,7 +876,7 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			cycle_count += 4;
 			break;	}
-		case 0xa1:    //AND rc with ra
+		case 0xa1:    // AND rc with ra
 			ra = rc & ra;
 			set_hcarry(1);
 			set_subtract(0);
@@ -869,7 +886,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0xa7:    //AND a with a
+		case 0xa7:    // AND a with a
 			ra = ra & ra;
 			set_hcarry(1);
 			check_zero(ra);
@@ -879,7 +896,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0xa9:    //xor rc with ra
+		case 0xa9:    // xor rc with ra
 			ra = rc ^ ra;
 			check_zero(ra);
 			set_subtract(0);
@@ -889,7 +906,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0xaf:    //XOR A A
+		case 0xaf:    // XOR A A
 			ra = 0;
 			set_zero(1);
 			set_hcarry(0);
@@ -919,7 +936,17 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0xc0:    //RTS if NZ
+		case 0xb7:    // OR A with A
+			ra = ra | ra;
+			check_zero(ra);
+			set_carry(0);
+			set_hcarry(0);
+			set_subtract(0);
+			pc +=2;
+			cycle_count += 4;
+			break;
+
+		case 0xc0:    // RTS if NZ
 			if (read_zero() == 0){
 				pc = pop16();
 				cycle_count += 20;
@@ -930,24 +957,24 @@ void cycle() {  //fetch, execute
 			}
 			break;
 		
-		case 0xc1:    //POP rbc
+		case 0xc1:    // POP rbc
 			w_rbc(pop16());
 			pc += 1;
 			cycle_count += 12;
 			break;
 
-		case 0xc3:    //JMP bb aa
+		case 0xc3:    // JMP bb aa
 			pc = bbaa();
 			cycle_count += 16;
 			break;
 
-		case 0xc5:    //push bc
+		case 0xc5:    // push bc
 			push16(r_rbc());
 			pc += 1;
 			cycle_count += 16;
 			break;
 
-		case 0xc8:    //RTS if Z
+		case 0xc8:    // RTS if Z
 			if (read_zero() == 1){
 				pc = pop16();
 				cycle_count += 20;
@@ -963,7 +990,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 16;
 			break;
 
-		case 0xca:    //JZ absolute
+		case 0xca:    // JZ absolute
 			if (read_zero() == 1){
 				pc = bbaa();
 				cycle_count += 16;
@@ -974,7 +1001,7 @@ void cycle() {  //fetch, execute
 			}
 			break;
 
-		case 0xcb: {  //2 bytes instructions
+		case 0xcb: {  // 2 bytes instructions
 			switch (operand[0]){
 				
 				case 0x37:{  //swap half bytes of ra
@@ -1001,13 +1028,13 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			break;
 		}
-		case 0xcd:    //call subroutine at bbaa
+		case 0xcd:    // call subroutine at bbaa
 			push16(pc + 0x3);
 			pc = bbaa();
 			cycle_count += 24;
 			break;
 
-		case 0xcf:    //call subroutine at 08h
+		case 0xcf:    // call subroutine at 08h
 			push16(pc);
 			pc = 0x08;
 			cycle_count += 24;  //?
@@ -1031,14 +1058,14 @@ void cycle() {  //fetch, execute
 			cycle_count += 24; // ?
 			break;
 
-		case 0xe0:    //save ra at FF00h + operand0
+		case 0xe0:    // save ra at FF00h + operand0
 			wr_mem((0xff00 + operand[0]), ra);
 			pc +=2;
 			cycle_count += 8;
 			break;
 
 
-		case 0xe1:    //pop into hl
+		case 0xe1:    // pop into hl
 			rhl = pop16();
 			check_carry32(rhl);
 			//TODO halfcarry check, other operand ?
@@ -1046,47 +1073,47 @@ void cycle() {  //fetch, execute
 			cycle_count += 12;
 			break;
 
-		case 0xe2:    //ld a at ff00h + rc
+		case 0xe2:    // ld a at ff00h + rc
 				wr_mem((0xff00 + rc), ra);
 				pc += 1;
 				cycle_count += 8;
 			break;
 
-		case 0xe5:    //push hl
+		case 0xe5:    // push hl
 			push16(rhl);
 			pc += 1;
 			cycle_count += 16;
 			break;
 
-		case 0xe6:    //AND operand 0 , ra
+		case 0xe6:    // AND operand 0 , ra
 			ra = ra & operand[0];
 			set_hcarry(1);
 			pc += 2;
 			cycle_count += 8;
 			break;
 
-		case 0xe9:    //jmp  hl
+		case 0xe9:    // jmp  hl
 			pc = rhl;
 			cycle_count += 16;
 			break;
 
-		case 0xea: {  //LD (nn),rA
+		case 0xea: {  // ld (nn),rA
 			wr_mem(bbaa(), ra);
 			pc += 3;
 			cycle_count += 16;
 			break;	}
-		case 0xef:    //call sub at 28h
+		case 0xef:    // call sub at 28h
 			push16(pc + 1);
 			pc = 0x28;
 			cycle_count += 24; //?
 			break;
 
-		case 0xf0: {  //ld a from (ff00h + xx)
+		case 0xf0: {  // ld ra from (ff00h + xx)
 			ra = memory[(0xff00 + operand[0])];
 			pc += 2;
 			cycle_count += 8;
 			break;	}
-		case 0xf1:    //POP raf
+		case 0xf1:    // pop raf
 			w_raf(pop16());
 			pc += 1;
 			cycle_count += 12;
@@ -1104,20 +1131,20 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			cycle_count += 16;
 			break;	}
-		case 0xfa:    //ld ra from bbaa()
+		case 0xfa:    // ld ra from bbaa()
 			ra = memory[bbaa()];
 			pc += 3;
 			cycle_count += 16;
 			break;
 
-		case 0xfb:    //interrupt enable
+		case 0xfb:    // interrupt enable
 			ie = 1;
 			memory[0xffff] = 1;
 			pc += 1;
 			cycle_count += 4;
 			break;
 
-		case 0xfe: {  // CP operand0 with a : Z if equal, N set, C and H as if it was ra- operand0
+		case 0xfe: {  // cmp operand0 with ra : Z if equal, N set, C and H as if it was ra- operand0
 			uint16_t temp = 0;
 			temp = ra - operand[0];
 			
@@ -1129,7 +1156,7 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			//?
 			break;	}
-		case 0xff: {  // RST $38
+		case 0xff: {  // rst $38
 			pc = 0x38;
 			cycle_count += 24;//?
 			break;	}
@@ -1163,52 +1190,50 @@ void cycle() {  //fetch, execute
 	}
 
 
-        void ginit() {
-			if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-				std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
-				return;
-			}
-			window = SDL_CreateWindow("GBoi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-			if (window == NULL) {
-				std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
-				return;
-			}
-			renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-			if (renderer == NULL) {
-				printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
-				return;
-			}
-			else {
-				SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-			}
-
+    void ginit() {
+		if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+			std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
+			return;
 		}
-
-		void draw_tileset() {  
-			
-			//populate gfx
-			update_tileram();
-			//dump_fbuffer();
-		
+		window = SDL_CreateWindow("GBoi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		if (window == NULL) {
+			std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
+			return;
+		}
+		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+		if (renderer == NULL) {
+			printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
+			return;
+		}
+		else {
 			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-			SDL_RenderClear(renderer);
-			
-			//draw routine
-			
-			
-			for (int lo = 1; lo < 13; lo++)   //top half logo
-				draw_tile(lo , 0, lo);
-				
-			for (int bi = 1; bi < 20; bi ++)
-				for (int go = 1; go < 20; go ++)	//bottom half logo
-					draw_tile(go , bi, 12 + go + ((bi - 1) * 19));
-			
-			// display on screen
-			
-			SDL_RenderPresent(renderer);
-			
-			
 		}
+	}
+
+	void draw_tileset() {  
+		
+		//populate gfx
+		update_tileram();
+		//dump_fbuffer();
+		
+		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+		SDL_RenderClear(renderer);
+			
+		//draw routine
+			
+			
+		for (int lo = 1; lo < 13; lo++)   //top half logo
+			draw_tile(lo , 0, lo);
+				
+		for (int bi = 1; bi < 20; bi ++)
+			for (int go = 1; go < 20; go ++)	//bottom half logo
+				draw_tile(go , bi, 12 + go + ((bi - 1) * 19));
+		
+		// display on screen
+		
+		SDL_RenderPresent(renderer);
+			
+	}
 
 
 	void draw_tile(int xpos, int ypos, int xindex){  // takes input x and y tile position, and x y index of tile in gfx
@@ -1226,32 +1251,32 @@ void cycle() {  //fetch, execute
 			}  
 	}
 
-void update_tileram(){
+	void update_tileram(){
 
 		uint16_t tile_address;
 			 
 											
-			for (int col = 0; col < MAX_NUM_TILES; col++) {
+		for (int col = 0; col < MAX_NUM_TILES; col++) {
 
-				tile_address = 0x8000 + (col * 16) - 2;
+			tile_address = 0x8000 + (col * 16) - 2;
 					
-				for (int pxline = 0; pxline <= 7; pxline++) {
+			for (int pxline = 0; pxline <= 7; pxline++) {
 					
-					tile_address +=2;
+				tile_address +=2;
 
-					gfx [(col * 8)][pxline]     = ((memory[tile_address] & 0b10000000) >> 6) + ((memory[tile_address + 1] & 0b10000000) >> 7);
-					gfx [(col * 8) + 1 ][pxline] = ((memory[tile_address] & 0b01000000) >> 5) + ((memory[tile_address + 1] & 0b01000000) >> 6);
-					gfx [(col * 8) + 2][pxline] = ((memory[tile_address] & 0b00100000) >> 4) + ((memory[tile_address + 1] & 0b00100000) >> 5);
-					gfx [(col * 8) + 3][pxline] = ((memory[tile_address] & 0b00010000) >> 3) + ((memory[tile_address + 1] & 0b00010000) >> 4);
-					gfx [(col * 8) + 4][pxline] = ((memory[tile_address] & 0b00001000) >> 2) + ((memory[tile_address + 1] & 0b00001000) >> 3);
-					gfx [(col * 8) + 5][pxline] = ((memory[tile_address] & 0b00000100) >> 1) + ((memory[tile_address + 1] & 0b00000100) >> 2);
-					gfx [(col * 8) + 6][pxline] = (memory[tile_address] & 0b00000010)        + ((memory[tile_address + 1] & 0b00000010) >> 1);
-					gfx [(col * 8) + 7][pxline] = ((memory[tile_address] & 0b00000001) << 1) + (memory[tile_address + 1] & 0b00000001);
+				gfx [(col * 8)][pxline]     = ((memory[tile_address] & 0b10000000) >> 6) + ((memory[tile_address + 1] & 0b10000000) >> 7);
+				gfx [(col * 8) + 1 ][pxline] = ((memory[tile_address] & 0b01000000) >> 5) + ((memory[tile_address + 1] & 0b01000000) >> 6);
+				gfx [(col * 8) + 2][pxline] = ((memory[tile_address] & 0b00100000) >> 4) + ((memory[tile_address + 1] & 0b00100000) >> 5);
+				gfx [(col * 8) + 3][pxline] = ((memory[tile_address] & 0b00010000) >> 3) + ((memory[tile_address + 1] & 0b00010000) >> 4);
+				gfx [(col * 8) + 4][pxline] = ((memory[tile_address] & 0b00001000) >> 2) + ((memory[tile_address + 1] & 0b00001000) >> 3);
+				gfx [(col * 8) + 5][pxline] = ((memory[tile_address] & 0b00000100) >> 1) + ((memory[tile_address + 1] & 0b00000100) >> 2);
+				gfx [(col * 8) + 6][pxline] = (memory[tile_address] & 0b00000010)        + ((memory[tile_address + 1] & 0b00000010) >> 1);
+				gfx [(col * 8) + 7][pxline] = ((memory[tile_address] & 0b00000001) << 1) + (memory[tile_address + 1] & 0b00000001);
 
 						
-				}
-				
 			}
+				
+		}
 
 			
 	return;

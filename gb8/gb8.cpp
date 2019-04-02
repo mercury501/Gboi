@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 
 	cpu.ginit();
 
-	for (;;) {  // fps 59.7, clock 4.19 Mhz  69 833 ca instructions per second
+	for (;;) { 
 		
 		cpu.cycle();
 

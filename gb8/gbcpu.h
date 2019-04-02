@@ -2,7 +2,7 @@
 #include <string.h>
 #include <SDL2/SDL.h>
 #include <fstream>  //debug purposes
-#include "gbtiming.cpp"
+
 using namespace std;
 
 const int SCREEN_WIDTH = 256;
