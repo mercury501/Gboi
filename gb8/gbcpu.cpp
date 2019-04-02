@@ -447,24 +447,39 @@ public:
 
 long lel = 0;   //debug purposes
 bool found = false;
-int lastpc = 0;
+int lastpc [10000];
+int index = 0;
+
 
 void cycle() {  //fetch, execute
 
 	if ((lel % 30000) == 0)
 		update_tileram();
-		if (pc == 0x7ff3 && !found){  
-			cout<<"A";
-			found =!found;
-		}
 		
-		//TODO find out why the 38h trap triggers
-	if (pc == 0x300)   //ffbf
-		cout<<"Caught";
+	if (pc== 0x293)
+		cout<<endl;
+		//TODO find out why it jumps to 1fd after 2ec --- VBlank routine
+	if (pc == 0x2ec && rb == 0 )
+		cout<<endl;
 
+	if (pc == 0x1fd) {  //ffbf
+		for (int i = 0; i < 10000; i++)
+			cout <<lastpc[i]<<" ,";
+		cout<<endl;	
+	}
 
-	lastpc = pc;
+	if (index < 9998){
+		lastpc[index] = pc;
+		index ++;
+	} else{
+	for (int i = 1; i < 10000; i++)
+		lastpc[i - 1] = lastpc[i];
+	
+	lastpc[9999] = pc;
+	}
 
+	
+		
 		lel ++;
 
 		if (lel % 4 == 0)  //temporary LY bypass
@@ -511,6 +526,7 @@ void cycle() {  //fetch, execute
 			
 			rb++;
 			set_subtract(0);
+			rb = rb & 0xff;
 			check_zero(rb);
 			pc += 1;
 			cycle_count += 4;
@@ -524,6 +540,7 @@ void cycle() {  //fetch, execute
 			
 			rb--;
 			set_subtract(1);
+			rb = rb & 0xff;
 			check_zero(rb);
 			pc += 1;
 			cycle_count += 4;
@@ -551,6 +568,7 @@ void cycle() {  //fetch, execute
 			
 			rc++;
 			set_subtract(0);
+			rc = rc & 0xff;
 			check_zero(rc);
 			pc += 1;
 			cycle_count += 4;
@@ -564,6 +582,7 @@ void cycle() {  //fetch, execute
 			
 			rc--;
 			set_subtract(1);
+			rc = rc & 0xff;
 			check_zero(rc);
 			pc += 1;
 			cycle_count += 4;
@@ -602,6 +621,7 @@ void cycle() {  //fetch, execute
 			
 			rd++;
 			set_subtract(0);
+			rd = rd & 0xff;
 			check_zero(rd);
 			pc += 1;
 			cycle_count += 4;
@@ -615,6 +635,7 @@ void cycle() {  //fetch, execute
 			
 			rd--;
 			set_subtract(1);
+			rd = rd & 0xff;
 			check_zero(rd);
 			pc += 1;
 			cycle_count += 4;
@@ -666,6 +687,7 @@ void cycle() {  //fetch, execute
 			
 			re++;
 			set_subtract(0);
+			re = re & 0xff;
 			check_zero(re);
 			pc += 1;
 			cycle_count += 4;
