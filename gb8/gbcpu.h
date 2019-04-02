@@ -5,6 +5,12 @@
 
 using namespace std;
 
+const int VRAM_VIEWER_POS_X = 30;
+const int VRAM_VIEWER_POS_Y = 90;
+
+const int GBOI_POS_X = 30;
+const int GBOI_POS_Y = 500;
+
 const int SCREEN_WIDTH = 256;
 const int SCREEN_HEIGHT = 224;
 const int MAX_NUM_TILES = 385;    //how many tiles fit in vram

@@ -17,10 +17,13 @@ private:
 	9800-9BFF  tile map 0
 	9C00-9FFF  tile map 1
 	*/
+	SDL_Window* Gboi = NULL;
+    SDL_Window* vram_viewer = NULL;
 
-    SDL_Window* window = NULL;
 	SDL_Texture* texture = NULL;
-    SDL_Renderer* renderer = NULL;
+
+	SDL_Renderer* Gboi_renderer = NULL;
+    SDL_Renderer* vram_renderer = NULL;
 	
 	/*Flag register (F)bits:
 
@@ -464,13 +467,13 @@ void cycle() {  //fetch, execute
 	if (pc == 0x2ec && rb == 0 )
 		cout<<endl;
 
-	/*if (pc == 0x1fd) {  //ffbf
+	/*if (pc == 0x1fd) {  //DEBUG print "trace" of sorts
 		for (int i = 0; i < 10000; i++)
 			cout <<lastpc[i]<<" ,";
 		cout<<endl;	
 	} */
 
-	/*if (pc == lastpc[9999])
+	/*if (pc == lastpc[9999]) //DEBUG populate said "trace" of sorts
 		cout<<endl;
 
 	if (index < 9998){
@@ -488,19 +491,20 @@ void cycle() {  //fetch, execute
 		
 		lel ++;
 
-		if (lel % 4 == 0)  //temporary LY bypass
+		if (lel % 4 == 0)  //temporary LY bypass  //TODO this
 			memory[0xff44] = memory[0xff44] + 1;
 
 	//interrupt handling:
 	interrupt_routine();
 
-	if (cycle_count > CYCLES_PER_SECOND){
+	if (cycle_count > CYCLES_PER_SECOND){   //frame handling kinda
 		cycle_count = 0;
 		wait_next_frame(frame_start_time + (1000 / 60)); //60 frames every 1000 ms
 		frame_start_time = SDL_GetTicks();
 
 		//draw frame
 		draw_tileset();	//TEMP
+
 		//vblank interrupt	//TODO reset the interrupt after some time?
 		memory [0xff0f] = memory[0xff0f] | 0x1;
 
@@ -1313,10 +1317,11 @@ void cycle() {  //fetch, execute
 
 		default:   {
 			cout << "unknown opcode" << (int)opcode << "   " << (int)pc ;
-			for (int i = 0; i < 10000; i++)
+			/*for (int i = 0; i < 10000; i++)  //print "trace" of sorts
 				cout <<lastpc[i]<<" ,";
+				*/
 			break;
-		}
+			}
 		};
 
 		return;
@@ -1347,18 +1352,23 @@ void cycle() {  //fetch, execute
 			std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
 			return;
 		}
-		window = SDL_CreateWindow("GBoi", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-		if (window == NULL) {
+		
+		vram_viewer = SDL_CreateWindow("VRAM Viewer Gboi", VRAM_VIEWER_POS_X, VRAM_VIEWER_POS_Y, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		Gboi =SDL_CreateWindow("Gboi", GBOI_POS_X, GBOI_POS_Y, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		if (vram_viewer == NULL || Gboi == NULL) {
 			std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
 			return;
 		}
-		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-		if (renderer == NULL) {
+
+		vram_renderer = SDL_CreateRenderer(vram_viewer, -1, SDL_RENDERER_ACCELERATED);
+		Gboi_renderer = SDL_CreateRenderer(Gboi, -1, SDL_RENDERER_ACCELERATED);
+		if (vram_renderer == NULL || Gboi_renderer == NULL) {
 			printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
 			return;
 		}
 		else {
-			SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+			SDL_SetRenderDrawColor(vram_renderer, 0x00, 0x00, 0x00, 0xFF);
+			SDL_SetRenderDrawColor(Gboi_renderer, 0x00, 0x00, 0x00, 0xFF);
 		}
 	}
 
@@ -1368,9 +1378,12 @@ void cycle() {  //fetch, execute
 		update_tileram();
 		//dump_fbuffer();
 		
-		SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-		SDL_RenderClear(renderer);
-			
+		SDL_SetRenderDrawColor(vram_renderer, 0x00, 0x00, 0x00, 0xFF);
+		SDL_RenderClear(vram_renderer);
+
+		SDL_SetRenderDrawColor(Gboi_renderer, 0x00, 0x00, 0x00, 0xFF);
+		SDL_RenderClear(Gboi_renderer);
+		
 		//draw routine
 			
 			
@@ -1383,7 +1396,8 @@ void cycle() {  //fetch, execute
 		
 		// display on screen
 		
-		SDL_RenderPresent(renderer);
+		SDL_RenderPresent(vram_renderer);
+		SDL_RenderPresent(Gboi_renderer);
 			
 	}
 
@@ -1397,8 +1411,8 @@ void cycle() {  //fetch, execute
 			for (int y = ypos; y < ypos + 8; y++) {  				
 				for (int x = xpos; x < xpos + 8; x++) {
 					SDL_Rect fillRect = { x, y, 1, 1};
-					SDL_SetRenderDrawColor(renderer, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, gfx[xindex +(x - xpos)][(y - ypos)] * 0x55, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, 0xff);
-					SDL_RenderFillRect(renderer, &fillRect);	
+					SDL_SetRenderDrawColor(vram_renderer, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, gfx[xindex +(x - xpos)][(y - ypos)] * 0x55, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, 0xff);
+					SDL_RenderFillRect(vram_renderer, &fillRect);	
 				}
 			}  
 	}

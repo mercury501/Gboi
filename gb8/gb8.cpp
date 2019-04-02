@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
 	int w = 512;
 	int h = 512;
 
-	SDL_Window* window = NULL;
+	//SDL_Window* vram_viewer = NULL;
 
 	bool loaded = 0;
 
