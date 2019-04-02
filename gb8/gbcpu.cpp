@@ -179,7 +179,7 @@ private:
 	}
 
 	void check_hcarry(uint16_t result, uint16_t anyoperand) {
-		if ((result & 0xf) < (anyoperand & 0xf) || (result & 0xff) < (anyoperand & 0xff))
+		if ((((result & 0xf) + (anyoperand & 0xf)) & 0x10 ) > 0 )
 			w_sr('h', 1);
 		else
 			w_sr('h', 0);
@@ -205,7 +205,7 @@ private:
 	}
 
 	void set_subtract(bool value) {
-		w_sr('s', value);
+		w_sr('n', value);
 		return;
 	}
 
@@ -218,7 +218,7 @@ private:
 	}
 
 	bool read_subtract() {
-		return r_sr('s');
+		return r_sr('n');
 	}
 
 	bool read_zero() {
@@ -447,6 +447,7 @@ public:
 
 long lel = 0;   //debug purposes
 bool found = false;
+int lastpc = 0;
 
 void cycle() {  //fetch, execute
 
@@ -458,7 +459,11 @@ void cycle() {  //fetch, execute
 		}
 		
 		//TODO find out why the 38h trap triggers
-		 
+	if (pc == 0x300)   //ffbf
+		cout<<"Caught";
+
+
+	lastpc = pc;
 
 		lel ++;
 
@@ -499,22 +504,26 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0x04: {  // increment B
-			uint8_t temp = rb;
+			if ((rb & 0xf) == 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
 			rb++;
 			set_subtract(0);
 			check_zero(rb);
-			check_hcarry(rb, temp);
 			pc += 1;
 			cycle_count += 4;
 			break;	}
 
 		case 0x05: {  // 05 DECrement B
-			uint16_t temp = rb;
+			if ((rb & 0xf) == 0xf)
+				set_hcarry(0);
+			else
+				set_hcarry(1);
+			
 			rb--;
 			set_subtract(1);
-			//check_carry(rb);
-			check_hcarry(rb, temp);
-			rb = rb & 0xff;
 			check_zero(rb);
 			pc += 1;
 			cycle_count += 4;
@@ -535,21 +544,27 @@ void cycle() {  //fetch, execute
 			break; 	}
 
 		case 0x0c: {  // increment c
-			uint8_t temp = rc;
+			if ((rc & 0xf) == 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
 			rc++;
 			set_subtract(0);
 			check_zero(rc);
-			check_hcarry(rc, temp);
 			pc += 1;
 			cycle_count += 4;
 			break;	}
 
 		case 0x0d: {  // decrement C
-			uint16_t temp = rc;
+			if ((rc & 0xf) == 0xf)
+				set_hcarry(0);
+			else
+				set_hcarry(1);
+			
 			rc--;
-			set_subtract(1);  //TODO flag set/check on 8bit increments/decrements
+			set_subtract(1);
 			check_zero(rc);
-			check_hcarry(rc, temp);
 			pc += 1;
 			cycle_count += 4;
 			break;	}
@@ -579,23 +594,29 @@ void cycle() {  //fetch, execute
 			cycle_count += 8;
 			break;	}
 		
-		case 0x14: {  // increment D
-			uint8_t temp = rd;
+		case 0x14:    // increment D
+			if ((rd & 0xf) == 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
 			rd++;
-			pc += 1;
 			set_subtract(0);
 			check_zero(rd);
-			check_hcarry(rd, temp);
+			pc += 1;
 			cycle_count += 4;
-			break;	}
+			break;	
 
 		case 0x15: {  // decrement D  
-			uint8_t temp = rd;
+			if ((rd & 0xf) == 0xf)
+				set_hcarry(0);
+			else
+				set_hcarry(1);
+			
 			rd--;
-			pc += 1;
-			check_zero(rd);
-			check_hcarry(rd, temp);
 			set_subtract(1);
+			check_zero(rd);
+			pc += 1;
 			cycle_count += 4;
 			break;	}
 
@@ -619,11 +640,14 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0x19:    // add de to hl
+			if ((r_rde() & 0xff) + (rhl & 0xff) > 0xff)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
 			rhl += r_rde();
 			check_carry32(rhl);
 			set_subtract(0);
-			check_hcarry(rhl, r_rde());
-			check_zero(rhl);
 			pc += 1;
 			cycle_count += 8;
 			break;
@@ -635,11 +659,14 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0x1c: {  // INC re
-			uint8_t temp = re;
+			if ((re & 0xf) == 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
 			re++;
-			check_zero(re);
-			check_hcarry(re, temp);
 			set_subtract(0);
+			check_zero(re);
 			pc += 1;
 			cycle_count += 4;
 			break;	}
@@ -723,13 +750,18 @@ void cycle() {  //fetch, execute
 
 		case 0x2c: {  // INC rl
 			uint8_t temp = rhl;
-			temp++;
-			pc += 1;
-			check_zero(temp);
-			check_hcarry(temp - 1, temp);
+			
+			if ((temp & 0xf) == 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
+			temp ++;
 			set_subtract(0);
+			check_zero(temp);
 			rhl = rhl & 0xff00;
 			rhl += temp;
+			pc += 1;
 			cycle_count += 4;
 			break;	}
 
@@ -754,12 +786,15 @@ void cycle() {  //fetch, execute
 			cycle_count += 8;
 			break;
 
-		case 0x35: {  // DC (rhl)
-			uint16_t temp = memory[rhl];
-			memory[rhl] -= 1;
+		case 0x35: {  // DEC (rhl)
+			if ((memory[rhl] & 0xf) == 0xf)
+				set_hcarry(0);
+			else
+				set_hcarry(1);
+			
+			memory[rhl] = memory[rhl] - 1;
 			set_subtract(1);
-			check_zero(temp);
-			check_hcarry(temp, temp - 1);
+			check_zero(memory[rhl]);
 			pc += 1;
 			cycle_count += 12;
 			break;	}
@@ -806,6 +841,12 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
+		case 0x75: {   // copy rl to (rhl)
+			wr_mem(rhl, rhl & 0xff);
+			pc += 1;
+			cycle_count += 8;
+			break;	}
+		
 		case 0x78:    // copy b to a
 			ra = rb;
 			pc += 1;
@@ -837,42 +878,72 @@ void cycle() {  //fetch, execute
 			break;	}
 
 		case 0x82:    // add d to a
+			if ((ra & 0xf) + (rd & 0xf) > 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);		
+
 			ra += rd;
 			check_carry(ra);
 			check_zero(ra);
 			set_subtract(0);
-			check_hcarry(ra, rd);
+			pc += 1;
+			cycle_count += 4;
+			break;
+		
+		case 0x83:    // add re to ra
+			if ((ra & 0xf) + (re & 0xf) > 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
+			ra += re;
+			set_subtract(0);
+			check_carry(ra);
+			check_zero(ra);
 			pc += 1;
 			cycle_count += 4;
 			break;
 
 		case 0x87: {  // double a
-			uint16_t temp = ra;
+			if ((ra & 0xf) + (ra & 0xf) > 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+
 			ra += ra;
 			check_carry(ra);
 			check_zero(ra);
 			set_subtract(0);
-			check_hcarry(ra, temp);
 			pc += 1;
 			cycle_count += 4;
 			break;	}
 
 		case 0x89: {  // adc A c,  add c and carry flag to A
+			if ((ra & 0xf) + ((rc + r_sr('c')) & 0xf) > 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+
 			ra += rc + (r_sr('c'));
 			check_carry(ra);
 			check_zero(ra);
 			set_subtract(0);
-			check_hcarry(ra, rc);
 			pc += 1;
 			cycle_count += 4;
 			break;	}
+
 		case 0x8f: {  // add a and fc to a
+			if ((ra & 0xf) + ((ra + r_sr('c')) & 0xf) > 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
 			uint16_t temp = r_sr('c') + ra;
 			ra = (ra * 2) + r_sr('c');
 			check_carry(ra);
 			check_zero(ra);
 			set_subtract(0);
-			check_hcarry(ra, temp);
 			pc += 1;
 			cycle_count += 4;
 			break;	}
