@@ -343,29 +343,30 @@ private:
 void interrupt_routine(){
 	IME = memory[0xffff];
 	IF = memory[0xff0f];
-
-	if ((IME & 0x1) && (IF & 0x1)){  //Vblank
-		push16(pc);
-		pc = 0x40;
-	}
-	else if((IME & 0x2) && (IF & 0x2)){  //LCD
+	if (ie > 0){
+		if ((IME & 0x1) && (IF & 0x1)){  //Vblank
 			push16(pc);
-			pc = 0x48;
-	}
-		else if ((IME & 0x4) && (IF & 0x4)){   //Timer
-				push16(pc);
-				pc = 0x50;
+			pc = 0x40;
 		}
-			else if ((IME & 0x8) && (IF & 0x8)){  //Serial
+		else if((IME & 0x2) && (IF & 0x2)){  //LCD
+				push16(pc);
+				pc = 0x48;
+		}
+			else if ((IME & 0x4) && (IF & 0x4)){   //Timer
 					push16(pc);
-					pc = 0x58;
+					pc = 0x50;
 			}
-				else if ((IME & 0x10) && (IF & 0x10)){  //Joypad
+				else if ((IME & 0x8) && (IF & 0x8)){  //Serial
 						push16(pc);
-						pc = 0x60;
+						pc = 0x58;
 				}
-
-	memory[0xff0f] = 0;
+					else if ((IME & 0x10) && (IF & 0x10)){  //Joypad
+							push16(pc);
+							pc = 0x60;
+					}
+	
+		memory[0xff0f] = 0;
+	}
 	return;
 }
 
@@ -449,6 +450,7 @@ long lel = 0;   //debug purposes
 bool found = false;
 int lastpc [10000];
 int index = 0;
+int mov_breakpoint = 0x312;
 
 
 void cycle() {  //fetch, execute
@@ -456,17 +458,20 @@ void cycle() {  //fetch, execute
 	if ((lel % 30000) == 0)
 		update_tileram();
 		
-	if (pc== 0x293)
+	if (pc== mov_breakpoint)
 		cout<<endl;
-		//TODO find out why it jumps to 1fd after 2ec --- VBlank routine
+		
 	if (pc == 0x2ec && rb == 0 )
 		cout<<endl;
 
-	if (pc == 0x1fd) {  //ffbf
+	/*if (pc == 0x1fd) {  //ffbf
 		for (int i = 0; i < 10000; i++)
 			cout <<lastpc[i]<<" ,";
 		cout<<endl;	
-	}
+	} */
+
+	/*if (pc == lastpc[9999])
+		cout<<endl;
 
 	if (index < 9998){
 		lastpc[index] = pc;
@@ -476,9 +481,10 @@ void cycle() {  //fetch, execute
 		lastpc[i - 1] = lastpc[i];
 	
 	lastpc[9999] = pc;
-	}
+	} */
 
-	
+	if (pc == 0x2800)  //loaded graphics!
+		cycle_count += 70000;
 		
 		lel ++;
 
@@ -495,7 +501,7 @@ void cycle() {  //fetch, execute
 
 		//draw frame
 		draw_tileset();	//TEMP
-		//vblank interrupt	
+		//vblank interrupt	//TODO reset the interrupt after some time?
 		memory [0xff0f] = memory[0xff0f] | 0x1;
 
 	}
@@ -807,6 +813,20 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			cycle_count += 8;
 			break;
+		
+		case 0x34:     //INC (rhl)
+			if ((memory[rhl] & 0xf) == 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
+			memory[rhl]++;
+			set_subtract(0);
+			memory[rhl] = memory[rhl] & 0xff;
+			check_zero(memory[rhl]);
+			pc += 1;
+			cycle_count += 12;
+			break;
 
 		case 0x35: {  // DEC (rhl)
 			if ((memory[rhl] & 0xf) == 0xf)
@@ -825,6 +845,34 @@ void cycle() {  //fetch, execute
 			wr_mem(rhl, operand[0]);
 			pc += 2;
 			cycle_count += 12;
+			break;
+
+		case 0x3c:    // INC ra  //? or rhl?
+			if ((ra & 0xf) == 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
+			ra++;
+			set_subtract(0);
+			ra = ra & 0xff;
+			check_zero(ra);
+			pc += 1;
+			cycle_count += 4;
+			break;
+
+		case 0x3d:    // DEC ra
+			if ((ra & 0xf) == 0xf)
+				set_hcarry(0);
+			else
+				set_hcarry(1);
+			
+			ra--;
+			set_subtract(1);
+			ra = ra & 0xff;
+			check_zero(ra);
+			pc += 1;
+			cycle_count += 4;
 			break;
 
 		case 0x3e:    // ld a $xx
@@ -1145,6 +1193,12 @@ void cycle() {  //fetch, execute
 			cycle_count += 16;
 			break;
 
+		case 0xd9:    // rts and enable interrupts
+			pc = pop16();
+			ie = 1;
+			cycle_count += 16;
+			break;
+
 		case 0xdf:    // call subroutine at 0018h
 			push16(pc);
 			pc = 0x0018;
@@ -1215,15 +1269,16 @@ void cycle() {  //fetch, execute
 		case 0xf3: {  // disable interrupts
 			//TODO implement interrupts, then disable them.
 			ie = 0;
-			memory[0xffff] = 0;
 			pc += 1;
 			cycle_count += 4;
 			break;	} 
+
 		case 0xf5: {  // push af
 			push16(r_raf());
 			pc += 1;
 			cycle_count += 16;
 			break;	}
+
 		case 0xfa:    // ld ra from bbaa()
 			ra = memory[bbaa()];
 			pc += 3;
@@ -1232,19 +1287,21 @@ void cycle() {  //fetch, execute
 
 		case 0xfb:    // interrupt enable
 			ie = 1;
-			memory[0xffff] = 1;
 			pc += 1;
 			cycle_count += 4;
 			break;
 
 		case 0xfe: {  // cmp operand0 with ra : Z if equal, N set, C and H as if it was ra- operand0
-			uint16_t temp = 0;
-			temp = ra - operand[0];
-			
-			check_zero(temp);
-			check_hcarry(temp, ra);
+			uint16_t temp = ra - operand[0];
+			if((operand[0] & 0x0f) > (ra & 0x0f)) 
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+
 			check_carry(temp);
 			set_subtract(1);
+			ra = temp & 0xff;
+			check_zero(temp);
 
 			pc += 2;
 			//?
@@ -1256,6 +1313,8 @@ void cycle() {  //fetch, execute
 
 		default:   {
 			cout << "unknown opcode" << (int)opcode << "   " << (int)pc ;
+			for (int i = 0; i < 10000; i++)
+				cout <<lastpc[i]<<" ,";
 			break;
 		}
 		};
