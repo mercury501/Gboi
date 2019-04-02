@@ -1,4 +1,7 @@
 # Gboi
-beginner project gameboy emulator in c++ with sdl2.
+Gameboy emulator learning project in c++ with sdl2.
 
-WIP, still working on opcodes.
+Processor: 45% -ish.
+Graphics: loads tiles.
+
+WIP
