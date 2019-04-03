@@ -86,6 +86,7 @@ private:
 	int cycle_count;
 	uint32_t frame_start_time;
 
+	
 
 	void wait_next_frame(uint32_t frame_end){  //should already account for instruction time
         	    while (SDL_GetTicks() < frame_end)
@@ -345,6 +346,30 @@ private:
 		return;
 	}
 
+	/*	bit 2 enable (1)
+		00: 4096 Hz 
+		01: 262144 Hz 
+		10: 65536 Hz 
+		11: 16384 Hz
+	*/
+	
+/*  TODO timers, need more resolution than SDL_GetTicks()
+	void timer_routine(){
+		if (memory[TMC] > 0b100){
+			uint8_t temp = memory[TMC] & 0b11;
+
+			switch(temp){
+				case 0b00:
+					timer_freq =
+
+
+			}
+
+		}
+
+		return;
+	} */
+
 /* 0	Vblank   0x40
    1	LCD stat 0x48
    2	Timer 	 0x50
@@ -457,12 +482,15 @@ public:
 		pc = 0x100;
 
 		frame_start_time = SDL_GetTicks();
+
+		
+
 		return;
 
 	}
 
 
-long lel = 0;   //debug purposes
+long lel = 0;   //DEBUG
 bool found = false;
 int lastpc [10000];
 int index = 0;
@@ -470,7 +498,8 @@ int mov_breakpoint = 0x312;
 
 
 void cycle() {  //fetch, execute
-	//TODO interrupts, timers, tile maps
+
+	//TODO interrupts, timers, tile maps <---
 	
 	if (pc== mov_breakpoint)
 		cout<<endl;
@@ -498,13 +527,15 @@ void cycle() {  //fetch, execute
 	if (pc == 0x2800)  //loaded graphics!
 		cycle_count += 70000;
 		
-		lel ++;
+	lel ++;
 
 	if (lel % 4 == 0)  //temporary LY bypass  //TODO this
 		memory[0xff44] = memory[0xff44] + 1;
 
 	//interrupt handling:
 	interrupt_routine();
+
+	
 
 	if (cycle_count > CYCLES_PER_SECOND){   //frame handling kinda
 		cycle_count = 0;
@@ -566,12 +597,30 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break; 	}
 
-		case 0x06: {  // LD rb operand0
+		case 0x06:    // LD rb operand0
 			rb = operand[0];
 			check_zero(rb);
 			pc += 2;
 			cycle_count += 8;
-			break; 	}
+			break; 	
+
+		case 0x09:    //ADD rhl rbc
+			if ((r_rbc() & 0xff) + (rhl & 0xff) > 0xff)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
+			rhl += r_rbc();
+			check_carry32(rhl);
+			set_subtract(0);
+			pc += 1;
+			cycle_count += 8;
+			break;
+
+		case 0x0a:    // LD ra (rbc)
+			ra = memory[r_rbc()];
+			cycle_count += 8;
+			break;
 
 		case 0x0b: {  // DEC rbc
 			uint32_t temp = r_rbc();  
@@ -861,6 +910,23 @@ void cycle() {  //fetch, execute
 			cycle_count += 12;
 			break;
 
+		case 0x38:    // JR C operand0
+			if (read_carry() == 1) {
+				if (operand[0] >= 0x80) {
+					operand[0] = (operand[0]^0xff) + 1 ;
+					pc -= operand[0];
+					cycle_count += 16;
+				}
+				else {
+					pc += operand[0];
+					cycle_count += 12;
+				}
+			}
+			
+				pc += 2;
+				
+			break;
+
 		case 0x3c:    // INC ra
 			if ((ra & 0xf) == 0xf)
 				set_hcarry(1);
@@ -894,6 +960,18 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			cycle_count += 8;
 			break;
+		
+		case 0x4e:    // LD rc (rhl)
+			rc = memory[rhl];
+			pc += 1;
+			cycle_count += 8;
+			break;
+
+		case 0x46:    // LD rb (rhl)
+			rb = memory[rhl];
+			pc += 1;
+			cycle_count += 8;
+			break;
 
 		case 0x47:    // LD rb ra
 			rb = ra;
@@ -921,6 +999,20 @@ void cycle() {  //fetch, execute
 
 		case 0x5f:    // LD re ra
 			re = ra;
+			pc += 1;
+			cycle_count += 4;
+			break;
+
+		case 0x60:    // LD rh rb
+			rhl = rhl & 0x00ff;
+			rhl += rb << 8;
+			pc += 1;
+			cycle_count += 4;
+			break;
+
+		case 0x69:    // LD rl rc
+			rhl = rhl & 0xff00;
+			rhl += rc;
 			pc += 1;
 			cycle_count += 4;
 			break;
@@ -1164,6 +1256,16 @@ void cycle() {  //fetch, execute
 
 		case 0xcb: {  // 2 bytes instructions
 			switch (operand[0]){
+
+				case 0x27:   // SLA ra
+					set_carry(ra >> 7);
+					ra = ra << 1;
+					check_zero(ra);
+					set_subtract(0);
+					set_hcarry(0);
+					pc += 1;
+					cycle_count += 8;
+					break;
 				
 				case 0x37:{  //SWAP ra
 					uint8_t temp = (ra & 0xf);
