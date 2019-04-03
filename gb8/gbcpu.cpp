@@ -79,7 +79,7 @@ private:
 		C000 DE00
 
 		*/
-
+	
 	uint8_t opcode;
 	uint16_t operand[2];
 
@@ -87,12 +87,11 @@ private:
 	uint32_t frame_start_time;
 
 
- void wait_next_frame(uint32_t frame_end){  //should already account for instruction time
-            while (SDL_GetTicks() < frame_end)
-				SDL_Delay(5);
-
-        return;
-    }
+	void wait_next_frame(uint32_t frame_end){  //should already account for instruction time
+        	    while (SDL_GetTicks() < frame_end)
+					SDL_Delay(5);
+		   return;
+ 	}
 
 
 	uint16_t bbaa() {
@@ -180,7 +179,7 @@ private:
 			w_sr('c', 0);
 		return;
 	}
-
+/*
 	void check_hcarry(uint16_t result, uint16_t anyoperand) {
 		if ((((result & 0xf) + (anyoperand & 0xf)) & 0x10 ) > 0 )
 			w_sr('h', 1);
@@ -189,13 +188,13 @@ private:
 		return;
 	}
 
-	void check_hcarry32(uint32_t result, uint32_t anyoperand) { // TODO experimental
+	void check_hcarry32(uint32_t result, uint32_t anyoperand) { 
 		if ((result & 0xff) < (anyoperand & 0xff) || (result & 0xffff) < (anyoperand & 0xffff))
 			w_sr('h', 1);
 		else
 			w_sr('h', 0);
 		return;
-	}
+	} */
 
 	void check_zero(uint16_t value) {
 		if (value == 0) {
@@ -284,7 +283,7 @@ private:
 	}
 
 
-	void push8(uint8_t datos) { //TODO validate push pop
+	void push8(uint8_t datos) { 
 		memory[sp] = datos;
 		sp--;
 		return;
@@ -348,28 +347,33 @@ void interrupt_routine(){
 	IF = memory[0xff0f];
 	if (ie > 0){
 		if ((IME & 0x1) && (IF & 0x1)){  //Vblank
+			memory[0xff0f] = 0;
 			push16(pc);
 			pc = 0x40;
 		}
 		else if((IME & 0x2) && (IF & 0x2)){  //LCD
+				memory[0xff0f] = 0;
 				push16(pc);
 				pc = 0x48;
 		}
 			else if ((IME & 0x4) && (IF & 0x4)){   //Timer
+					memory[0xff0f] = 0;
 					push16(pc);
 					pc = 0x50;
 			}
 				else if ((IME & 0x8) && (IF & 0x8)){  //Serial
+						memory[0xff0f] = 0;
 						push16(pc);
 						pc = 0x58;
 				}
 					else if ((IME & 0x10) && (IF & 0x10)){  //Joypad
+							memory[0xff0f] = 0;
 							push16(pc);
 							pc = 0x60;
 					}
 	
-		memory[0xff0f] = 0;
 	}
+
 	return;
 }
 
@@ -457,10 +461,8 @@ int mov_breakpoint = 0x312;
 
 
 void cycle() {  //fetch, execute
-
-	if ((lel % 30000) == 0)
-		update_tileram();
-		
+	//TODO interrupts, timers, tile maps
+	
 	if (pc== mov_breakpoint)
 		cout<<endl;
 		
@@ -502,10 +504,12 @@ void cycle() {  //fetch, execute
 		wait_next_frame(frame_start_time + (1000 / 60)); //60 frames every 1000 ms
 		frame_start_time = SDL_GetTicks();
 
+		//update vram
+		update_tileram();
 		//draw frame
 		draw_tileset();	//TEMP
 
-		//vblank interrupt	//TODO reset the interrupt after some time?
+		//vblank interrupt	
 		memory [0xff0f] = memory[0xff0f] | 0x1;
 
 	}
@@ -564,8 +568,8 @@ void cycle() {  //fetch, execute
 			break; 	}
 
 		case 0x0b: {  // DEC rbc
-			uint32_t tempo = r_rbc();  //TODO more efficient way?
-			w_rbc((tempo - 0x1)); 
+			uint32_t temp = r_rbc();  
+			w_rbc((temp - 0x1)); 
 			pc += 1;
 			cycle_count += 4;
 			break; 	}
@@ -1218,8 +1222,6 @@ void cycle() {  //fetch, execute
 
 		case 0xe1:    // POP rhl
 			rhl = pop16();
-			check_carry32(rhl);
-			//TODO halfcarry check, other operand ?
 			pc += 1;
 			cycle_count += 12;
 			break;
@@ -1271,7 +1273,6 @@ void cycle() {  //fetch, execute
 			break;
 
 		case 0xf3: {  // DI
-			//TODO implement interrupts, then disable them.
 			ie = 0;
 			pc += 1;
 			cycle_count += 4;
