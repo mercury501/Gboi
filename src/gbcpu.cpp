@@ -242,7 +242,6 @@ private:
 		return;
 	}
 
-
 	uint16_t r_rde() {
 		uint16_t temp = 0;
 		temp += re;
@@ -310,8 +309,13 @@ private:
 
 	void wr_mem(uint16_t address, uint8_t data){
 		switch(address){
-			case 0xff44: 
+			case 0xff44: //LY write resets counter
 				memory[address] = 0;
+				break;
+
+			case 0xff46: //DMA
+				data *= 0x100; //ra = address / 100h
+				//TODO DMA
 				break;
 
 			case 0xff80: //tetris patch?
@@ -325,7 +329,7 @@ private:
 		return;
 	}
 
-	void dump_memory(){
+	void dump_memory(){ //DEBUG
 		ofstream outfile ("memory.dump");
 		for (int i = 0; i < 0xffff; i++){
 		outfile << memory[i];
@@ -335,6 +339,11 @@ private:
 		return;
 	}
 
+	void print_trace_of_sorts(){  //DEBUG
+		for (int i = 0; i < 10000; i++)
+			cout<< lastpc[i] <<" ,";
+		return;
+	}
 
 /* 0	Vblank   0x40
    1	LCD stat 0x48
@@ -469,19 +478,17 @@ void cycle() {  //fetch, execute
 	if (pc == 0x2ec && rb == 0 )
 		cout<<endl;
 
-	/*if (pc == 0x1fd) {  //DEBUG print "trace" of sorts
-		for (int i = 0; i < 10000; i++)
-			cout <<lastpc[i]<<" ,";
-		cout<<endl;	
-	} */
+	// print_trace_of_sorts();
 
-	/*if (pc == lastpc[9999]) //DEBUG populate said "trace" of sorts
+	/*
+	if (pc == lastpc[9999]) //DEBUG populate said "trace" of sorts
 		cout<<endl;
 
 	if (index < 9998){
 		lastpc[index] = pc;
 		index ++;
-	} else{
+	} 
+	else {
 	for (int i = 1; i < 10000; i++)
 		lastpc[i - 1] = lastpc[i];
 	
@@ -493,8 +500,8 @@ void cycle() {  //fetch, execute
 		
 		lel ++;
 
-		if (lel % 4 == 0)  //temporary LY bypass  //TODO this
-			memory[0xff44] = memory[0xff44] + 1;
+	if (lel % 4 == 0)  //temporary LY bypass  //TODO this
+		memory[0xff44] = memory[0xff44] + 1;
 
 	//interrupt handling:
 	interrupt_routine();
@@ -504,9 +511,8 @@ void cycle() {  //fetch, execute
 		wait_next_frame(frame_start_time + (1000 / 60)); //60 frames every 1000 ms
 		frame_start_time = SDL_GetTicks();
 
-		//update vram
-		update_tileram();
-		//draw frame
+		//update vram and draw
+		
 		draw_tileset();	//TEMP
 
 		//vblank interrupt	
@@ -924,6 +930,12 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			cycle_count += 8;
 			break;	}
+
+		case 0x77:    // LD (rhl) ra
+			wr_mem(rhl, ra);
+			pc += 1;
+			cycle_count += 8;
+			break;
 		
 		case 0x78:    // LD ra rb
 			ra = rb;
@@ -1318,9 +1330,8 @@ void cycle() {  //fetch, execute
 
 		default:   {
 			cout << "unknown opcode" << (int)opcode << "   " << (int)pc ;
-			/*for (int i = 0; i < 10000; i++)  //print "trace" of sorts
-				cout <<lastpc[i]<<" ,";
-				*/
+			//DEBUG print trace of sorts
+			//print_trace_of_sorts();
 			break;
 			}
 		};
@@ -1328,7 +1339,7 @@ void cycle() {  //fetch, execute
 		return;
 	}
 
-	void dump_fbuffer(){	
+	void dump_fbuffer(){	//DEBUG
 		
 			for (int i = 0; i < 8; i++){
 				cout << endl;
@@ -1377,36 +1388,38 @@ void cycle() {  //fetch, execute
 		
 		//populate gfx
 		update_tileram();
-		//dump_fbuffer();
+		
 		
 		SDL_SetRenderDrawColor(vram_renderer, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(vram_renderer);
 
-		SDL_SetRenderDrawColor(Gboi_renderer, 0x00, 0x00, 0x00, 0xFF);
-		SDL_RenderClear(Gboi_renderer);
+		//SDL_SetRenderDrawColor(Gboi_renderer, 0x00, 0x00, 0x00, 0xFF);
+		//\SDL_RenderClear(Gboi_renderer);
 		
 		//draw routine
 			
 			
 		for (int lo = 1; lo < 13; lo++)   //top half logo
-			draw_tile(lo , 0, lo);
+			draw_tile_viewer(lo , 0, lo);
 				
 		for (int bi = 1; bi < 20; bi ++)
 			for (int go = 1; go < 20; go ++)	//bottom half logo
-				draw_tile(go , bi, 12 + go + ((bi - 1) * 19));
+				draw_tile_viewer(go , bi, 12 + go + ((bi - 1) * 19));
 		
+	
 		// display on screen
 		
 		SDL_RenderPresent(vram_renderer);
-		SDL_RenderPresent(Gboi_renderer);
+		
+		//SDL_RenderPresent(Gboi_renderer);
 			
 	}
 
 
-	void draw_tile(int xpos, int ypos, int xindex){  // takes input x and y tile position, and x y index of tile in gfx
+	void draw_tile_viewer(int xpos, int ypos, int xindex){  // takes input x and y tile position, and x y index of tile in gfx
 																
-			xpos *= 8;
-			ypos *= 8;
+			xpos   *= 8;
+			ypos   *= 8;
 			xindex *= 8;			
 
 			for (int y = ypos; y < ypos + 8; y++) {  				
@@ -1414,6 +1427,21 @@ void cycle() {  //fetch, execute
 					SDL_Rect fillRect = { x, y, 1, 1};
 					SDL_SetRenderDrawColor(vram_renderer, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, gfx[xindex +(x - xpos)][(y - ypos)] * 0x55, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, 0xff);
 					SDL_RenderFillRect(vram_renderer, &fillRect);	
+				}
+			}  
+	}
+
+	void draw_tile(int xpos, int ypos, int xindex){  // takes input x and y tile position, and x y index of tile in gfx
+																
+			xpos   *= 8;
+			ypos   *= 8;
+			xindex *= 8;			
+
+			for (int y = ypos; y < ypos + 8; y++) {  				
+				for (int x = xpos; x < xpos + 8; x++) {
+					SDL_Rect fillRect = { x, y, 1, 1};
+					SDL_SetRenderDrawColor(Gboi_renderer, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, gfx[xindex +(x - xpos)][(y - ypos)] * 0x55, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, 0xff);
+					SDL_RenderFillRect(Gboi_renderer, &fillRect);	
 				}
 			}  
 	}
@@ -1449,7 +1477,7 @@ void cycle() {  //fetch, execute
 	return;
 	}
 
-	void write_tile(uint8_t tile_location[], uint16_t tile_address, int tile_index){
+	void write_tile_vram(uint8_t tile_location[], uint16_t tile_address, int tile_index){
 		
 		tile_address -= 2;
 					

@@ -1,5 +1,5 @@
 #OBJS specifies which files to compile as part of the project
-OBJS = gb8.cpp gbcpu.h gbcpu.cpp 
+OBJS = Gboi.cpp gbcpu.h gbcpu.cpp 
 
 #CC specifies which compiler we're using
 CC = g++
@@ -19,7 +19,7 @@ COMPILER_FLAGS = -w -g
 LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2
 
 #OBJ_NAME specifies the name of our exectuable
-OBJ_NAME = gb8.exe
+OBJ_NAME = Gboi.exe
 
 #This is the target that compiles our executable
 all : $(OBJS)

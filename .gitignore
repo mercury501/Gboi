@@ -1,4 +1,4 @@
-gb8/memory.dump
-gb8/framebuffer.dump
-gb8/gb8.exe
-gb8/gb8.out
+src/memory.dump
+src/framebuffer.dump
+src/gb8.exe
+src/gb8.out

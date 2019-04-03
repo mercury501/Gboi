@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string.h>
 #include <SDL2/SDL.h>
+
 #include <fstream>  //debug purposes
 
 using namespace std;
