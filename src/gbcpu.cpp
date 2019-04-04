@@ -20,7 +20,7 @@ private:
 	SDL_Window* Gboi = NULL;
     SDL_Window* vram_viewer = NULL;
 
-	SDL_Texture* texture = NULL;
+	//SDL_Texture* texture = NULL;
 
 	SDL_Renderer* Gboi_renderer = NULL;
     SDL_Renderer* vram_renderer = NULL;
@@ -527,6 +527,11 @@ void cycle() {  //fetch, execute
 	if (pc == 0x2800)  //loaded graphics!
 		cycle_count += 70000;
 		
+	if (pc == 0x407){  //loaded map
+		cout<<endl;
+		cycle_count = 80000;
+	}
+
 	lel ++;
 
 	if (lel % 4 == 0)  //temporary LY bypass  //TODO this
@@ -545,6 +550,7 @@ void cycle() {  //fetch, execute
 		//update vram and draw
 		
 		draw_tileset();	//TEMP
+		draw_map(0);  //TODO debug map side, pc has to get to 0x407 twice untiil map has loaded completely
 
 		//vblank interrupt	
 		memory [0xff0f] = memory[0xff0f] | 0x1;
@@ -568,6 +574,13 @@ void cycle() {  //fetch, execute
 			pc += 3;
 			cycle_count += 20;
 			break;
+
+		case 0x03: {   // INC rbc
+			uint16_t temp = r_rbc();
+			w_rbc(temp + 1);
+			pc += 1;
+			cycle_count += 8;
+			break;	}
 
 		case 0x04: {  // INC rb
 			if ((rb & 0xf) == 0xf)
@@ -604,7 +617,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 8;
 			break; 	
 
-		case 0x09:    //ADD rhl rbc
+		case 0x09:    // ADD rhl rbc
 			if ((r_rbc() & 0xff) + (rhl & 0xff) > 0xff)
 				set_hcarry(1);
 			else
@@ -619,6 +632,7 @@ void cycle() {  //fetch, execute
 
 		case 0x0a:    // LD ra (rbc)
 			ra = memory[r_rbc()];
+			pc += 1;
 			cycle_count += 8;
 			break;
 
@@ -1469,6 +1483,7 @@ void cycle() {  //fetch, execute
 		
 		vram_viewer = SDL_CreateWindow("VRAM Viewer Gboi", VRAM_VIEWER_POS_X, VRAM_VIEWER_POS_Y, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 		Gboi =SDL_CreateWindow("Gboi", GBOI_POS_X, GBOI_POS_Y, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		
 		if (vram_viewer == NULL || Gboi == NULL) {
 			std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
 			return;
@@ -1476,6 +1491,7 @@ void cycle() {  //fetch, execute
 
 		vram_renderer = SDL_CreateRenderer(vram_viewer, -1, SDL_RENDERER_ACCELERATED);
 		Gboi_renderer = SDL_CreateRenderer(Gboi, -1, SDL_RENDERER_ACCELERATED);
+		
 		if (vram_renderer == NULL || Gboi_renderer == NULL) {
 			printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
 			return;
@@ -1517,6 +1533,27 @@ void cycle() {  //fetch, execute
 			
 	}
 
+	void draw_map(bool map_number){ //draw map, #0 is at 9800h-9BFFh 
+		SDL_SetRenderDrawColor(Gboi_renderer, 0x00, 0x00, 0x00, 0xFF);
+		SDL_RenderClear(Gboi_renderer);
+		
+		if (map_number == false){
+			
+			for (int i = 1; i < 32; i++){
+				
+				draw_tile(i,1,memory[0x9800 + i]);
+			}
+		}
+		else
+		{
+			
+		}
+		
+		
+		SDL_RenderPresent(Gboi_renderer);
+
+		return;
+	}
 
 	void draw_tile_viewer(int xpos, int ypos, int xindex){  // takes input x and y tile position, and x y index of tile in gfx
 																
