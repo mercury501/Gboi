@@ -26,6 +26,8 @@ int main(int argc, char* argv[])
 
 
 	cpu.initialize();
+	
+	
 
 	if (argc == 2) {
 		while (!loaded) {
@@ -53,7 +55,8 @@ int main(int argc, char* argv[])
 	}
 
 	cpu.ginit();
-
+	cpu.boot_logo();
+	
 	for (;;) { 
 		
 		cpu.cycle();

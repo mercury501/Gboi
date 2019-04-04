@@ -352,6 +352,7 @@ private:
 		return;
 	}
 
+
 	/*	bit 2 enable (1)
 		00: 4096 Hz 
 		01: 262144 Hz 
@@ -418,6 +419,33 @@ void interrupt_routine(){
 }
 
 public:
+
+	void boot_logo(){
+		update_tileram();
+		
+		
+		SDL_SetRenderDrawColor(Gboi_renderer, 0x00, 0x00, 0x00, 0xFF);
+		SDL_RenderClear(Gboi_renderer);
+
+		//draw routine
+			
+			
+		for (int lo = 1; lo < 13; lo++)   //top half logo
+			draw_tile(lo + 10 , 15, lo);
+				
+		
+			for (int go = 1; go < 20; go ++)	//bottom half logo
+				draw_tile(go + 10 , 16, 12 + go );
+		
+	
+		// display on screen
+		
+		SDL_RenderPresent(Gboi_renderer);
+
+		frame_start_time = SDL_GetTicks();
+		wait_next_frame(frame_start_time + 1500);
+		return;
+	}
 
 	bool load_binary(string path) { //load rom starting at 0x200
 
@@ -514,10 +542,10 @@ void cycle() {  //fetch, execute
 		cout<<endl;
 	} */
 
-	if (memory[0x98a0] != 0){
+	/*if (memory[0x98a0] != 0){
 		//dump_memory();
 		cout<< endl;
-	}
+	} */
 	// print_trace_of_sorts();
 
 	/*
@@ -1638,17 +1666,14 @@ void cycle() {  //fetch, execute
 		SDL_RenderClear(vram_renderer);
 
 		//SDL_SetRenderDrawColor(Gboi_renderer, 0x00, 0x00, 0x00, 0xFF);
-		//\SDL_RenderClear(Gboi_renderer);
+		//SDL_RenderClear(Gboi_renderer);
 		
 		//draw routine
 			
-			
-		for (int lo = 1; lo < 13; lo++)   //top half logo
-			draw_tile_viewer(lo , 0, lo);
-				
-		for (int bi = 1; bi < 20; bi ++)
-			for (int go = 1; go < 20; go ++)	//bottom half logo
-				draw_tile_viewer(go , bi, 12 + go + ((bi - 1) * 19));
+		for (int hi = 0; hi < 32; hi ++)		
+			for (int lo = 0; lo < 32; lo++)   
+				draw_tile_viewer(lo , hi, lo + (hi * 32));
+					
 		
 	
 		// display on screen
