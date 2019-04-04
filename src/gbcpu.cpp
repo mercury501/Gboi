@@ -310,6 +310,12 @@ private:
 
 	void wr_mem(uint16_t address, uint8_t data){
 		switch(address){
+			/*case 0x9938:  //DEBUG
+				memory[address] = data;
+				if (data == 0x2f)
+				cout<<endl;
+				break; */
+			
 			case 0xff44: //LY write resets counter
 				memory[address] = 0;
 				break;
@@ -494,19 +500,24 @@ long lel = 0;   //DEBUG
 bool found = false;
 int lastpc [10000];
 int index = 0;
-int mov_breakpoint = 0x312;
+int mov_breakpoint = 0x312;  
 
 
 void cycle() {  //fetch, execute
 
 	//TODO interrupts, timers, tile maps <---
 	
-	if (pc== mov_breakpoint)
-		cout<<endl;
+	//DEBUG map data shifted from 0x9800 to 0x9938
 		
-	if (pc == 0x2ec && rb == 0 )
+	/*if (pc == 0x322){
+		//dump_memory();
 		cout<<endl;
+	} */
 
+	if (memory[0x98a0] != 0){
+		//dump_memory();
+		cout<< endl;
+	}
 	// print_trace_of_sorts();
 
 	/*
@@ -524,13 +535,14 @@ void cycle() {  //fetch, execute
 	lastpc[9999] = pc;
 	} */
 
-	if (pc == 0x2800)  //loaded graphics!
-		cycle_count += 70000;
-		
-	if (pc == 0x407){  //loaded map
+	/*if (pc == 0x2800)  //loaded graphics!
+		cout<< endl;;
+	*/	
+	/*if (pc == 0x407){  //loaded map at 0x407
 		cout<<endl;
-		cycle_count = 80000;
-	}
+		//dump_memory();
+		//cycle_count = 80000;
+	} */
 
 	lel ++;
 
@@ -562,6 +574,14 @@ void cycle() {  //fetch, execute
 	operand[0] = memory[pc + 1];
 	operand[1] = memory[pc + 2];
 
+	/*if (opcode == 0x32 && rhl == 0x9800 && pc == 0x27f1){
+		dump_memory();
+
+		for (int i = 0; i < 0x300; i++)
+			cout<<(int)memory[i+0x9800]<<" ,";
+		cout<<endl;
+	} */
+
 	switch (opcode) {
 
 		case 0x00:    // NOP
@@ -575,7 +595,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 20;
 			break;
 
-		case 0x03: {   // INC rbc
+		case 0x03: {  // INC rbc
 			uint16_t temp = r_rbc();
 			w_rbc(temp + 1);
 			pc += 1;
@@ -830,6 +850,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 8;
 			break;
 
+		case 0x26:    // LD rh operand0
+			rhl = rhl & 0x00ff;
+			rhl += operand[0] << 8;
+			pc += 2;
+			cycle_count += 8;
+			break;
+
 		case 0x28:    // JRZ signed
 			if (read_zero() != 0) {
 				if (operand[0] >= 0x80) {
@@ -1005,6 +1032,12 @@ void cycle() {  //fetch, execute
 			cycle_count += 8;
 			break;
 
+		case 0x57:    // LD rd ra
+			rd = ra;
+			pc += 1;
+			cycle_count += 4;
+			break;
+
 		case 0x5e:    // LD re (rhl)
 			re = memory[rhl];
 			pc += 1;
@@ -1027,6 +1060,13 @@ void cycle() {  //fetch, execute
 		case 0x69:    // LD rl rc
 			rhl = rhl & 0xff00;
 			rhl += rc;
+			pc += 1;
+			cycle_count += 4;
+			break;
+
+		case 0x6f:    // LD rl ra
+			rhl = rhl & 0xff00;
+			rhl += ra;
 			pc += 1;
 			cycle_count += 4;
 			break;
@@ -1067,6 +1107,12 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
+		case 0x7d:    // LD ra rl
+			ra = rhl & 0x00ff;
+			pc += 1;
+			cycle_count += 4;
+			break;
+
 		case 0x7e: {  // LD ra (hl)
 			ra = memory[rhl];
 			pc += 1;
@@ -1100,6 +1146,21 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			cycle_count += 4;
 			break;
+
+		case 0x85: {  // ADD ra rl
+			uint8_t temp = rhl;
+			if ((ra & 0xf) + (temp & 0xf) > 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
+			ra += temp;
+			set_subtract(0);
+			check_carry(ra);
+			check_zero(ra);
+			pc += 1;
+			cycle_count += 4;
+			break;	}
 
 		case 0x87: {  // ADD ra ra
 			if ((ra & 0xf) + (ra & 0xf) > 0xf)
@@ -1230,6 +1291,19 @@ void cycle() {  //fetch, execute
 			cycle_count += 12;
 			break;
 
+		case 0xc2:    // JNZ bbaa()
+			if (read_zero() > 0) {
+				pc = bbaa();
+				cycle_count += 16;
+			}
+			else
+			{
+				pc += 3;
+				cycle_count += 12;
+			}
+			break;
+			
+
 		case 0xc3:    // JMP bbaa()
 			pc = bbaa();
 			cycle_count += 16;
@@ -1239,6 +1313,20 @@ void cycle() {  //fetch, execute
 			push16(r_rbc());
 			pc += 1;
 			cycle_count += 16;
+			break;
+
+		case 0xc6:    // ADD ra operand0
+			if ((ra & 0xf) + (operand[0] & 0xf) > 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+
+			ra = ra + operand[0];
+			set_subtract(0);
+			check_carry(ra);
+			check_zero(ra);
+			pc += 2;
+			cycle_count += 8;
 			break;
 
 		case 0xc8:    // RTS Z
@@ -1270,8 +1358,7 @@ void cycle() {  //fetch, execute
 
 		case 0xcb: {  // 2 bytes instructions
 			switch (operand[0]){
-
-				case 0x27:   // SLA ra
+				case 0x27:    // SLA ra
 					set_carry(ra >> 7);
 					ra = ra << 1;
 					check_zero(ra);
@@ -1281,25 +1368,64 @@ void cycle() {  //fetch, execute
 					cycle_count += 8;
 					break;
 				
-				case 0x37:{  //SWAP ra
+				case 0x33: {  // SWAP re
+					uint8_t temp = (re & 0xf);
+					re= (re >> 4) + (temp << 4);
+					check_zero(re);
+					set_subtract(0);
+					set_hcarry(0);
+					set_carry(0);
+					cycle_count += 8;
+					break;	}
+
+				case 0x37: {  // SWAP ra
 					uint8_t temp = (ra & 0xf);
 					ra = (ra >> 4) + (temp << 4);
 					check_zero(ra);
 					set_subtract(0);
 					set_hcarry(0);
 					set_carry(0);
+					cycle_count += 8;
 					break;	}
 
-				case 0x87:  // RES 0 ra
+				case 0x3f:    // SRL ra
+					set_carry(ra & 0b1);
+					ra = ra >> 1;
+					check_zero(ra);
+					set_subtract(0);
+					set_hcarry(0);
+					cycle_count += 8;
+					break;
+					
+				case 0x40:    // BIT 0 rb
+					if ((rb  & 0b1) > 0)
+						set_zero(0);
+					else
+						set_zero(1);
+					set_subtract(0);
+					set_hcarry(1);
+					cycle_count += 8;
+					break;
+
+				case 0x7e:    // BIT 7 (rhl)
+					if (((memory[rhl] >> 6) & 0b1) > 0)
+						set_zero(0);
+					else
+						set_zero(1);
+					set_subtract(0);
+					set_hcarry(1);
+					cycle_count += 12;
+					break;
+
+				case 0x87:    // RES 0 ra
 					  ra = ra & 0xfe;
+					  cycle_count += 8;
 					break;
 
 
 
-				default:{
-					cout << "Unknown CB op ";
-				
-				}
+				default: {
+					cout << "Unknown CB op ";	}
 			} 
 
 			pc += 2;
@@ -1539,7 +1665,7 @@ void cycle() {  //fetch, execute
 		
 		if (map_number == false){
 			
-			for (int i = 1; i < 32; i++){
+			for (int i = 33; i < 32 + 33; i++){
 				
 				draw_tile(i,1,memory[0x9800 + i]);
 			}
