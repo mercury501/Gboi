@@ -529,7 +529,7 @@ bool found = false;
 int lastpc [10000];
 int index = 0;
 int mov_breakpoint = 0x312;  
-
+bool blallo = 0;
 
 void cycle() {  //fetch, execute
 
@@ -583,7 +583,8 @@ void cycle() {  //fetch, execute
 	
 
 	if (cycle_count > CYCLES_PER_SECOND){   //frame handling kinda
-		cycle_count = 0;
+		cycle_count = 0;  // reset cycle counter
+		
 		wait_next_frame(frame_start_time + (1000 / 60)); //60 frames every 1000 ms
 		frame_start_time = SDL_GetTicks();
 
@@ -1690,7 +1691,7 @@ void cycle() {  //fetch, execute
 		
 		if (map_number == false){
 			
-			for (int i = 33; i < 32 + 33; i++){
+			for (int i = 0; i < 32; i++){
 				
 				draw_tile(i,1,memory[0x9800 + i]);
 			}
