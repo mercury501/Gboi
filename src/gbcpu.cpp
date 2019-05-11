@@ -1,7 +1,6 @@
 #include "gbcpu.h"
 
 
-
 class gbcpu {
 private:
 
