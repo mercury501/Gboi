@@ -570,9 +570,10 @@ void savestate(){
 4164 - 41e2   internal ram 1
 
 41e3 interrupt enable register    IF */  
-	
-	
-		
+	if (state_number == 12340)
+		cout<<"";
+	if (state_number >= 12000){
+	cout<<"Saving state:  "<<state_number;
 	ofstream outfile ("gstate_" + to_string(state_number), ios::binary);
 
 	outfile << (char)(0x00 & 0xff) << (char)(ra & 0xff) << (char)(sr & 0xff) << (char)(rb & 0xff) << (char)(rc & 0xff) << (char)(rd & 0xff) << (char)(re & 0xff) << (char)(rhl & 0x00ff) << (char)((rhl >> 8) & 0xff) << (char)(sp & 0xff) << (char)((sp >> 8) & 0xff) << (char)(current_pc & 0xff) << (char)((current_pc >> 8) & 0xff) ;
@@ -594,10 +595,10 @@ void savestate(){
 	
 	outfile.close();
 	
-	
+	}
 	
 	state_number++;
-	if (state_number == 2000 )
+	if (state_number == 13000 )
  		cout<<"LELLO";
 	return;
 }
@@ -1634,7 +1635,7 @@ void cycle() {  //fetch, execute
 
 		case 0xfe: {  // CMP ra operand0 
 			uint16_t temp = ra - operand[0];
-			if((operand[0] & 0x0f) > (ra & 0x0f)) 
+			if (((ra & 0x10) == 0x10) && ((temp & 0x10) != 0x10)) 
 				set_hcarry(1);
 			else
 				set_hcarry(0);
