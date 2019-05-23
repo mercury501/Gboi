@@ -1,4 +1,5 @@
 src/memory.dump
 src/framebuffer.dump
-src/gb8.exe
-src/gb8.out
+src/Gboi.exe
+src/Gboi.out
+src/gstate*

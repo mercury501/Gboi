@@ -570,10 +570,13 @@ void savestate(){
 4164 - 41e2   internal ram 1
 
 41e3 interrupt enable register    IF */  
+	
+	
+		
+	ofstream outfile ("gstate_" + to_string(state_number), ios::binary);
 
-	ofstream outfile ("gstate_" + to_string(state_number));
-	outfile << (char)0x00 << (char)ra << (char)sr << (char)rb << (char)rc << (char)rd << (char)re << (char)(rhl & 0xff) << (char)(rhl >> 8) << (char)(sp & 0xff) << (char)(sp >> 8) << (char)(current_pc & 0xff) << (char)(current_pc >> 8)  ;
-	outfile << (char)IME << (char)0 << (char)0 ;
+	outfile << (char)(0x00 & 0xff) << (char)(ra & 0xff) << (char)(sr & 0xff) << (char)(rb & 0xff) << (char)(rc & 0xff) << (char)(rd & 0xff) << (char)(re & 0xff) << (char)(rhl & 0x00ff) << (char)((rhl >> 8) & 0xff) << (char)(sp & 0xff) << (char)((sp >> 8) & 0xff) << (char)(current_pc & 0xff) << (char)((current_pc >> 8) & 0xff) ;
+	outfile << (char)(IME & 0xff) << (char)0x00 << (char)0x00 ;
 	
 	for (int a = 0; a < 0x2000; a++){  //vram, 8000 to a000
 		outfile << (char)memory[0x8000 + a];
@@ -590,9 +593,12 @@ void savestate(){
 	} 
 	
 	outfile.close();
+	
+	
+	
 	state_number++;
-	if (state_number == 1000)
-		cout<<"LELLO";
+	if (state_number == 2000 )
+ 		cout<<"LELLO";
 	return;
 }
 
@@ -607,43 +613,7 @@ void cycle() {  //fetch, execute
 
 	//TODO interrupts, timers, tile maps <---
 	
-	//DEBUG map data shifted from 0x9800 to 0x9938
-		
-	/*if (pc == 0x322){
-		//dump_memory();
-		cout<<endl;
-	} */
-
-	/*if (memory[0x98a0] != 0){
-		//dump_memory();
-		cout<< endl;
-	} */
-	// print_trace_of_sorts();
-
-	/*
-	if (pc == lastpc[9999]) //DEBUG populate said "trace" of sorts
-		cout<<endl;
-
-	if (index < 9998){
-		lastpc[index] = pc;
-		index ++;
-	} 
-	else {
-	for (int i = 1; i < 10000; i++)
-		lastpc[i - 1] = lastpc[i];
 	
-	lastpc[9999] = pc;
-	} */
-
-	/*if (pc == 0x2800)  //loaded graphics!
-		cout<< endl;;
-	*/	
-	/*if (pc == 0x407){  //loaded map at 0x407
-		cout<<endl;
-		//dump_memory();
-		//cycle_count = 80000;
-	} */
-
 	lel ++;
 
 	if (lel % 4 == 0)  //temporary LY bypass  //TODO this
@@ -674,7 +644,7 @@ void cycle() {  //fetch, execute
 	
 	current_pc = pc;
 	savestate();
-	if (pc == 0x28b)
+	if (rhl == 0xa0d)
 		cout<<"";
 
 	opcode = memory[pc];
@@ -724,12 +694,14 @@ void cycle() {  //fetch, execute
 			break;	}
 
 		case 0x05: {  // DEC rb
-			if ((rb & 0xf) == 0xf)
-				set_hcarry(0);
-			else
-				set_hcarry(1);
-			
+			uint8_t temp = rb >> 4;
 			rb--;
+			if (rb >>4 != temp)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+			
+			
 			set_subtract(1);
 			rb = rb & 0xff;
 			check_zero(rb);
@@ -785,12 +757,13 @@ void cycle() {  //fetch, execute
 			break;	}
 
 		case 0x0d: {  // DEC rc
-			if ((rc & 0xf) == 0xf)
-				set_hcarry(0);
-			else
-				set_hcarry(1);
-			
+			uint8_t temp = rc >> 4;
 			rc--;
+			if (rc >>4 != temp)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+
 			set_subtract(1);
 			rc = rc & 0xff;
 			check_zero(rc);
@@ -838,12 +811,13 @@ void cycle() {  //fetch, execute
 			break;	
 
 		case 0x15: {  // DEC rd  
-			if ((rd & 0xf) == 0xf)
-				set_hcarry(0);
-			else
-				set_hcarry(1);
-			
+			uint8_t temp = rd >> 4;
 			rd--;
+			if (rd >>4 != temp)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+
 			set_subtract(1);
 			rd = rd & 0xff;
 			check_zero(rd);
@@ -1089,19 +1063,20 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0x3d:    // DEC ra
-			if ((ra & 0xf) == 0xf)
-				set_hcarry(0);
-			else
-				set_hcarry(1);
-			
+		case 0x3d: {   // DEC ra
+			uint8_t temp = ra >> 4;
 			ra--;
+			if (ra >>4 != temp)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+
 			set_subtract(1);
 			ra = ra & 0xff;
 			check_zero(ra);
 			pc += 1;
 			cycle_count += 4;
-			break;
+			break;	}
 
 		case 0x3e:    // LD ra operand0
 			ra = operand[0];
