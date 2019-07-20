@@ -87,6 +87,9 @@ private:
 	uint16_t operand[2];
 
 	int cycle_count;
+	int old_cycle_count;
+	int last_frame_cycle_count = 0;
+
 	uint32_t frame_start_time;
 
 	
@@ -388,7 +391,8 @@ private:
 
 void interrupt_routine(){
 	IME = memory[0xffff];
-	IF = memory[0xff0f];
+	IF  = memory[0xff0f];
+
 	if (ie > 0){
 		if ((IME & 0x1) && (IF & 0x1)){  //Vblank
 			memory[0xff0f] = 0;
@@ -632,12 +636,15 @@ void cycle() {  //fetch, execute
 		memory[0xff44] = memory[0xff44] + 1;
 
 	//interrupt handling:
+	if ((old_cycle_count - cycle_count) > 0)
+		IF = IF | 0x2;
+
 	interrupt_routine();
 
 	
 
-	if (cycle_count > CYCLES_PER_SECOND){   //frame handling kinda
-		cycle_count = 0;  // reset cycle counter
+	if (cycle_count > (last_frame_cycle_count + CYCLES_PER_SECOND)){   //frame handling kinda
+		last_frame_cycle_count = cycle_count;  // reset cycle counter
 		
 		wait_next_frame(frame_start_time + (1000 / 60)); //60 frames every 1000 ms
 		frame_start_time = SDL_GetTicks();
@@ -652,26 +659,29 @@ void cycle() {  //fetch, execute
 
 	}
 
+	old_cycle_count = cycle_count;
+
 	//DEBUG
-	
-	current_pc = pc;
+	if (debugging){
+		current_pc = pc;
 
-	if (debugging) savestate();
+		if (debugging) savestate();
 
-	if (rhl == 0xa0d)
-		cout<<"";
+		if (rhl == 0xa0d)
+			cout<<"";
+	}  //Not debug
 
 	opcode = memory[pc];
 	operand[0] = memory[pc + 1];
 	operand[1] = memory[pc + 2];
 
 	/*if (opcode == 0x32 && rhl == 0x9800 && pc == 0x27f1){
+
 		dump_memory();
 
 		for (int i = 0; i < 0x300; i++)
 			cout<<(int)memory[i+0x9800]<<" ,";
-		cout<<endl;
-	} */
+		cout<<endl;	} */
 
 	switch (opcode) {
 
@@ -992,7 +1002,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
-		case 0x2d:  { // DEC rl
+		case 0x2d: {  // DEC rl
 			uint8_t temp = (rhl >> 4) & 0xf;
 			rhl--;
 			
@@ -1100,7 +1110,7 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0x3d: {   // DEC ra
+		case 0x3d: {  // DEC ra
 			uint8_t temp = ra >> 4;
 			ra--;
 			if (ra >>4 != temp)
@@ -1610,8 +1620,7 @@ void cycle() {  //fetch, execute
 					temp = temp & 0b11111110;
 					wr_mem(rhl, temp);
 					cycle_count += 16;
-					break;
-				}
+					break;	}
 				case 0x87:    // RES 0 ra
 					  ra = ra & 0xfe;
 					  cycle_count += 8;
@@ -1979,7 +1988,4 @@ void cycle() {  //fetch, execute
 
 	}
 	
-
-
-
 };
