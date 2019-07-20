@@ -536,41 +536,41 @@ public:
 
 	}
 
-void savestate(){
-/*00 bootrom_enable_boh
-01 ra
-02 rf
-03 rb
-04 rc
-05 rd
-06 re
-07-08 rhl
-09-0a rsp
-0b-0c pc
-0d IME
+void savestate() {
+	/*00 bootrom_enable_boh
+	01 ra
+	02 rf
+	03 rb
+	04 rc
+	05 rd
+	06 re
+	07-08 rhl
+	09-0a rsp
+	0b-0c pc
+	0d IME
 
-0e halted   ??? written as 0
-0f stopped             0
+	0e halted   ??? written as 0
+	0f stopped             0
 
-10-2009 VRAM
-2010-20af OAM
+	10-2009 VRAM
+	2010-20af OAM
 
-20b0 LCDC
-20b1 BGP
-20b2 OBP0
-20b3 OBP1  all 00
-20b4 SCY
-20b5 SCX
-20b6 WY
-20b7 WX
+	20b0 LCDC
+	20b1 BGP
+	20b2 OBP0
+	20b3 OBP1  all 00
+	20b4 SCY
+	20b5 SCX
+	20b6 WY
+	20b7 WX
 
-20b8 - 40b7 RAM    from 0xc000 to 0xe000
+	20b8 - 40b7 RAM    from 0xc000 to 0xe000
 
-40b8- 4117 non io internal ram
-4118 - 4163  io ports
-4164 - 41e2   internal ram 1
+	40b8- 4117 non io internal ram
+	4118 - 4163  io ports
+	4164 - 41e2   internal ram 1
 
-41e3 interrupt enable register    IF */  
+	41e3 interrupt enable register    IF */  
 	if (state_number == 12340 && debugging)
 		cout<<"";
 	if (state_number >= 12000 && debugging){
@@ -634,8 +634,8 @@ void cycle() {  //fetch, execute
 
 		//update vram and draw
 		
-		//draw_tileset();	//TEMP
-		//draw_map(0);  //TODO debug map side, pc has to get to 0x407 twice untiil map has loaded completely
+		draw_tileset();	//TEMP
+		draw_map(0);  //TODO debug map side, pc has to get to 0x407 twice untiil map has loaded completely
 
 		//vblank interrupt	
 		memory [0xff0f] = memory[0xff0f] | 0x1;
@@ -1288,6 +1288,7 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			cycle_count += 4;
 			break;	}
+
 		case 0xa1:    // AND ra rc
 			ra = rc & ra;
 			set_hcarry(1);
