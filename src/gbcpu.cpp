@@ -1779,17 +1779,17 @@ void cycle() {  //fetch, execute
 
 	void draw_tile(int xpos, int ypos, int xindex){  // takes input x and y tile position, and x y index of tile in gfx
 																
-			xpos   *= 8;
-			ypos   *= 8;
-			xindex *= 8;			
+		xpos   *= 8;
+		ypos   *= 8;
+		xindex *= 8;			
 
-			for (int y = ypos; y < ypos + 8; y++) {  				
-				for (int x = xpos; x < xpos + 8; x++) {
-					SDL_Rect fillRect = { x, y, 1, 1};
-					SDL_SetRenderDrawColor(Gboi_renderer, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, gfx[xindex +(x - xpos)][(y - ypos)] * 0x55, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, 0xff);
-					SDL_RenderFillRect(Gboi_renderer, &fillRect);	
-				}
-			}  
+		for (int y = ypos; y < ypos + 8; y++) {  				
+			for (int x = xpos; x < xpos + 8; x++) {
+				SDL_Rect fillRect = { x, y, 1, 1};
+				SDL_SetRenderDrawColor(Gboi_renderer, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, gfx[xindex +(x - xpos)][(y - ypos)] * 0x55, gfx[xindex + (x - xpos)][(y - ypos)] * 0x55, 0xff);
+				SDL_RenderFillRect(Gboi_renderer, &fillRect);	
+			}
+		}  
 	}
 
 	void update_tileram(){
