@@ -536,6 +536,16 @@ public:
 
 	}
 
+	void test_bit(int num, uint16_t reg){
+		if ((reg  & num) > 0)
+						set_zero(0);
+					else
+						set_zero(1);
+					set_subtract(0);
+					set_hcarry(1);
+					return;
+	}
+
 void savestate() {
 	/*00 bootrom_enable_boh
 	01 ra
@@ -645,7 +655,7 @@ void cycle() {  //fetch, execute
 	//DEBUG
 	
 	current_pc = pc;
-	
+
 	if (debugging) savestate();
 
 	if (rhl == 0xa0d)
@@ -982,6 +992,22 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
+		case 0x2d:  { // DEC rl
+			uint8_t temp = (rhl >> 4) & 0xf;
+			rhl--;
+			
+			if (((rhl >> 4) & 0xf) != temp)
+				set_hcarry(1);
+			else
+				set_hcarry(0);
+
+			set_subtract(1);
+			rhl = rhl & 0xffff;
+			check_zero(rhl & 0xff);
+			pc += 1;
+			cycle_count += 4;
+			break;	}
+
 		case 0x2f:    // NOT ra
 			ra = 0xff - ra;
 			set_subtract(1);
@@ -1053,6 +1079,13 @@ void cycle() {  //fetch, execute
 				
 			break;
 
+		case 0x3a:    // LD ra (rhl)-
+			ra = memory[rhl];
+			pc += 1;
+			rhl --;
+			cycle_count += 8;
+			break;
+
 		case 0x3c:    // INC ra
 			if ((ra & 0xf) == 0xf)
 				set_hcarry(1);
@@ -1087,7 +1120,13 @@ void cycle() {  //fetch, execute
 			pc += 2;
 			cycle_count += 8;
 			break;
-		
+
+		case 0x40:    // LD rb rb
+			rb = rb;
+			pc += 1;
+			cycle_count += 4;
+			break;
+
 		case 0x4e:    // LD rc (rhl)
 			rc = memory[rhl];
 			pc += 1;
@@ -1106,8 +1145,14 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
-		case 0x4f:    // LD rc r
+		case 0x4f:    // LD rc ra
 			rc = ra;
+			pc += 1;
+			cycle_count += 4;
+			break;
+
+		case 0x54:    // LD rd rh
+			rd = (rhl >> 8) & 0xff;
 			pc += 1;
 			cycle_count += 4;
 			break;
@@ -1120,6 +1165,12 @@ void cycle() {  //fetch, execute
 
 		case 0x57:    // LD rd ra
 			rd = ra;
+			pc += 1;
+			cycle_count += 4;
+			break;
+
+		case 0x5d:    // LD re rl
+			re = rhl >> 8;
 			pc += 1;
 			cycle_count += 4;
 			break;
@@ -1143,6 +1194,13 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;
 
+		case 0x67:    // LD rh ra
+			rhl = rhl & 0x00ff;
+			rhl += ra << 8;
+			pc += 1;
+			cycle_count += 4;
+			break;
+
 		case 0x69:    // LD rl rc
 			rhl = rhl & 0xff00;
 			rhl += rc;
@@ -1155,6 +1213,24 @@ void cycle() {  //fetch, execute
 			rhl += ra;
 			pc += 1;
 			cycle_count += 4;
+			break;
+		
+		case 0x71:    // LD (rhl) rc
+			wr_mem(rhl, rc);
+			pc += 1;
+			cycle_count += 8;
+			break;
+
+		case 0x72:    // LD (rhl) rd
+			wr_mem(rhl, rd);
+			pc += 1;
+			cycle_count += 8;
+			break;
+
+		case 0x73:    // LD (rhl) re
+			wr_mem(rhl, re);
+			pc += 1;
+			cycle_count += 8;
 			break;
 
 		case 0x75: {  // LD (rhl) rl
@@ -1177,6 +1253,12 @@ void cycle() {  //fetch, execute
 					
 		case 0x7a:    // LD ra rd
 			ra = rd;
+			pc += 1;
+			cycle_count += 4;
+			break;
+
+		case 0x7b:    // LD ra re
+			ra = re;
 			pc += 1;
 			cycle_count += 4;
 			break;
@@ -1204,6 +1286,20 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			cycle_count += 12;
 			break;	}
+
+		case 0x80:    // ADD ra rb
+			if ((ra & 0xf) + (rb & 0xf) > 0xf)
+				set_hcarry(1);
+			else
+				set_hcarry(0);		
+
+			ra += rb;
+			check_carry(ra);
+			check_zero(ra);
+			set_subtract(0);
+			pc += 1;
+			cycle_count += 4;
+			break;
 
 		case 0x82:    // ADD ra rd
 			if ((ra & 0xf) + (rd & 0xf) > 0xf)
@@ -1485,25 +1581,37 @@ void cycle() {  //fetch, execute
 					break;
 					
 				case 0x40:    // BIT 0 rb
-					if ((rb  & 0b1) > 0)
-						set_zero(0);
-					else
-						set_zero(1);
-					set_subtract(0);
-					set_hcarry(1);
+					test_bit(0,rb);
+					cycle_count += 8;
+					break;
+				
+				case 0x50:    // BIT 2 rb
+					test_bit(2, rb);
+					cycle_count += 8;
+					break;
+
+				case 0x5f:    // BIT 3 ra
+					test_bit(3,ra);
 					cycle_count += 8;
 					break;
 
 				case 0x7e:    // BIT 7 (rhl)
-					if (((memory[rhl] >> 6) & 0b1) > 0)
-						set_zero(0);
-					else
-						set_zero(1);
-					set_subtract(0);
-					set_hcarry(1);
+					test_bit(7,memory[rhl]);
 					cycle_count += 12;
 					break;
 
+				case 0x7f:    // BIT 7 ra
+					test_bit(7,ra);
+					cycle_count += 8;
+					break;
+
+				case 0x86: {  // RES 0 (rhl)
+					uint8_t temp = memory[rhl];
+					temp = temp & 0b11111110;
+					wr_mem(rhl, temp);
+					cycle_count += 16;
+					break;
+				}
 				case 0x87:    // RES 0 ra
 					  ra = ra & 0xfe;
 					  cycle_count += 8;
@@ -1596,6 +1704,16 @@ void cycle() {  //fetch, execute
 			pc += 3;
 			cycle_count += 16;
 			break;	}
+		case 0xee:    // XOR ra operand0
+			ra = ra ^ operand[0];
+			check_zero(ra);
+			set_subtract(0);
+			set_hcarry(0);
+			set_carry(0);
+			pc += 2;
+			cycle_count += 4;
+			break;
+
 		case 0xef:    // CALL 28h
 			push16(pc + 1);
 			pc = 0x28;
@@ -1624,6 +1742,17 @@ void cycle() {  //fetch, execute
 			pc += 1;
 			cycle_count += 16;
 			break;	}
+
+		
+		case 0xf6:    // OR ra operand0
+			ra = operand[0] | ra;
+			set_hcarry(0);
+			set_subtract(0);
+			set_carry(0);
+			check_zero(ra);
+			pc += 1;
+			cycle_count += 4;
+			break;
 
 		case 0xfa:    // LD ra bbaa()
 			ra = memory[bbaa()];
