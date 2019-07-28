@@ -53,6 +53,7 @@ private:
 	bool debugging = false;
 	int state_number = 0;
 	uint16_t current_pc = 0;
+	int foundonce = 0;
 	/*  Interrupt Enable Register
 		-------------------------- - FFFF
 		Internal RAM
@@ -636,7 +637,7 @@ void cycle() {  //fetch, execute
 		memory[0xff44] = memory[0xff44] + 1;
 
 	//interrupt handling:
-	if ((old_cycle_count - cycle_count) > 0)
+	if ((old_cycle_count - cycle_count) > 0)     //need to check if x time has passed, then enable interrupt and reset old-cycle-count
 		IF = IF | 0x2;
 
 	interrupt_routine();
@@ -652,20 +653,25 @@ void cycle() {  //fetch, execute
 		//update vram and draw
 		
 		draw_tileset();	//TEMP
-		draw_map(0);  //TODO debug map side, pc has to get to 0x407 twice untiil map has loaded completely
+		draw_map(false);  //TODO debug map side, pc has to get to 0x407 twice untiil map has loaded completely
 
 		//vblank interrupt	
 		memory [0xff0f] = memory[0xff0f] | 0x1;
 
 	}
 
-	old_cycle_count = cycle_count;
+	old_cycle_count = cycle_count;  //TODO completely wrong
 
 	//DEBUG
 	if (debugging){
 		current_pc = pc;
+		if(pc == 0x407)
+			foundonce ++;
+		if (foundonce == 2)
+			for(int o = 0; o < 360; o++)
+				cout<<"address   "<<0x9800 + o<<"        value      "<<(int)memory[0x9800 + o]<<endl;
 
-		if (debugging) savestate();
+		// savestate();
 
 		if (rhl == 0xa0d)
 			cout<<"";
@@ -1882,14 +1888,18 @@ void cycle() {  //fetch, execute
 	}
 
 	void draw_map(bool map_number){ //draw map, #0 is at 9800h-9BFFh 
+		update_tileram();
+		
 		SDL_SetRenderDrawColor(Gboi_renderer, 0x00, 0x00, 0x00, 0xFF);
 		SDL_RenderClear(Gboi_renderer);
 		
 		if (map_number == false){
 			
-			for (int i = 0; i < 32; i++){
+			for (int i = 0; i < 20; i++){
+				for (int j = 0; j < 18; j++)
+					draw_tile(i,j,memory[0x9800 + i + (j * 0x20)]);
 				
-				draw_tile(i,1,memory[0x9800 + i]);
+
 			}
 		}
 		else
