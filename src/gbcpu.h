@@ -10,7 +10,7 @@ const int VRAM_VIEWER_POS_X = 30;
 const int VRAM_VIEWER_POS_Y = 50;
 
 const int GBOI_POS_X = 30;
-const int GBOI_POS_Y = 440;
+const int GBOI_POS_Y = 530;
 
 const int GBOI_SCREEN_MULTIPLIER = 2;
 const int VRAM_SCREEN_MULTIPLIER = 2;
