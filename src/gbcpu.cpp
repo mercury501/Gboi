@@ -1403,6 +1403,17 @@ void cycle() {  //fetch, execute
 			cycle_count += 4;
 			break;	}
 
+		//case 0x97:    // SUB ra ra
+		case 0xa0:    // AND ra rb
+			ra = rb & ra;
+			set_hcarry(1);
+			set_subtract(0);
+			set_carry(0);
+			check_zero(ra);
+			pc +=1;
+			cycle_count += 4;
+			break;
+
 		case 0xa1:    // AND ra rc
 			ra = rc & ra;
 			set_hcarry(1);
@@ -1838,8 +1849,8 @@ void cycle() {  //fetch, execute
 			return;
 		}
 		
-		vram_viewer = SDL_CreateWindow("VRAM Viewer Gboi", VRAM_VIEWER_POS_X, VRAM_VIEWER_POS_Y, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-		Gboi =SDL_CreateWindow("Gboi", GBOI_POS_X, GBOI_POS_Y, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		vram_viewer = SDL_CreateWindow("VRAM Viewer Gboi", VRAM_VIEWER_POS_X, VRAM_VIEWER_POS_Y, VRAM_SCREEN_WIDTH, VRAM_SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		Gboi =SDL_CreateWindow("Gboi", GBOI_POS_X, GBOI_POS_Y, GBOI_SCREEN_WIDTH, GBOI_SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 		
 		if (vram_viewer == NULL || Gboi == NULL) {
 			std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -1880,7 +1891,7 @@ void cycle() {  //fetch, execute
 		
 	
 		// display on screen
-		
+		SDL_RenderSetScale(vram_renderer,VRAM_SCREEN_MULTIPLIER,VRAM_SCREEN_MULTIPLIER);
 		SDL_RenderPresent(vram_renderer);
 		
 		//SDL_RenderPresent(Gboi_renderer);
@@ -1907,7 +1918,7 @@ void cycle() {  //fetch, execute
 			
 		}
 		
-		
+		SDL_RenderSetScale(Gboi_renderer,GBOI_SCREEN_MULTIPLIER,GBOI_SCREEN_MULTIPLIER);
 		SDL_RenderPresent(Gboi_renderer);
 
 		return;
