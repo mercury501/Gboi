@@ -6,7 +6,7 @@
         {
             "label": "GB build",
             "type": "shell",
-            "command": "cd C:/Users/mercury/source/repos/mercury501/Gboi/src & make ",
+            "command": "cd C:/Users/mercury/source/repos/mercury501/Gboi/src & make",
             "group": {
                 "kind": "build",
                 "isDefault": true
