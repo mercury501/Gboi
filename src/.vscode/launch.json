@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "C:/Users/tomma/source//Gboi/src/Gboi.exe",
-            "args": ["C:/Users/tomma/Documents/tetris.gb"],
+            "args": ["${workspaceFolder}/tetris.gb"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
